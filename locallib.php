@@ -37,7 +37,7 @@ class report_elearning_form extends moodleform {
      * Define the form.
      */
     protected function definition() {
-        global $CFG, $DB;
+        global $DB;
         $mform = $this->_form;
         $all = array();
 
@@ -143,8 +143,7 @@ function get_coursecategorycoursecount($path, $onlyvisible=false) {
  * @return string $sql The report table creation SQL.
  */
 function get_tablesql($category, $onlyvisible=false, $nonews=false) {
-    global $DB;
-    if ($category == 0) {
+    if ($category === 0) {
         // Summary for the whole moodle installation.
         $sql = "SELECT DISTINCT '' AS mccid, '' AS Category, '' AS mccpath,
                    (
@@ -209,9 +208,9 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
         $sql .= "   ) AS ASSIGNs,
                     (
                         SELECT COUNT(*)
-                          FROM {assign} a
+                          FROM {url} k
                           JOIN {course} c
-                            ON c.id = a.course
+                            ON c.id = k.course
                           JOIN {course_categories} cc
                             ON cc.id = c.category";
         // Omit hidden courses and categories.
@@ -221,9 +220,9 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
         $sql .= "   ) AS LINKs,
                     (
                         SELECT COUNT(*)
-                          FROM {url} k
+                          FROM {forum} b
                           JOIN {course} c
-                            ON c.id = k.course
+                            ON c.id = b.course
                           JOIN {course_categories} cc
                             ON cc.id = c.category";
         // Omit hidden courses and categories.
