@@ -110,13 +110,13 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             $resultstring .= get_string('courseincategorycountplural', 'report_elearning', $a);
         }
         $resultstring .= "<br />&#160;<br />\n";
-        // Write a table with 23 columns.
+        // Write a table with 24 columns.
         $table = new html_table();
         // Added up courses in this category, recursive.
         $totalheaderrow = new html_table_row();
         $totalheadercell = new html_table_cell(get_string('categorytotal', 'report_elearning'));
         $totalheadercell->header = true;
-        $totalheadercell->colspan = 23;
+        $totalheadercell->colspan = 24;
         $totalheadercell->attributes['class'] = 'c0';
         $totalheaderrow->cells = array($totalheadercell);
         $table->data[] = $totalheaderrow;
@@ -144,6 +144,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             get_string('choicegroup', 'report_elearning'),
             get_string('chat', 'report_elearning'),
             get_string('workshop', 'report_elearning'),
+            get_string('etherpadlite', 'report_elearning'),
             get_string('sumwithoutfiles', 'report_elearning'),
             get_string('sum', 'report_elearning')
             );
@@ -178,6 +179,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             $choicesgroup = $records->choicesgroup;
             $chats = $records->chats;
             $workshops = $records->workshops;
+            $etherpads = $records->etherpads;
             $table->data[] = array("<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $id .
                 "\" target=\"_blank\">" . $id . "</a>", "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $id .
                 "\" target=\"_blank\">" . get_stringpath($records->mccpath) . "</a><!--(" . $records->mccpath . ")-->",
@@ -200,6 +202,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
                 $choicesgroup,
                 $chats,
                 $workshops,
+                $etherpads,
                 (
                         $pages +
                         $labels +
@@ -217,7 +220,8 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
                         $choices +
                         $choicesgroup +
                         $chats +
-                        $workshops
+                        $workshops +
+                        $etherpads
                         ),
                 (
                         $files +
@@ -238,7 +242,8 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
                         $choices +
                         $choicesgroup +
                         $chats +
-                        $workshops
+                        $workshops +
+                        $etherpads
                         )
                 );
         }
@@ -247,7 +252,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $detailheaderrow = new html_table_row();
         $detailheadercell = new html_table_cell(get_string('justcategory', 'report_elearning'));
         $detailheadercell->header = true;
-        $detailheadercell->colspan = 23;
+        $detailheadercell->colspan = 24;
         $detailheaderrow->cells = array($detailheadercell);
         $table->data[] = $detailheaderrow;
         $courseheaderrow = new html_table_row();
@@ -274,6 +279,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             get_string('choicegroup', 'report_elearning'),
             get_string('chat', 'report_elearning'),
             get_string('workshop', 'report_elearning'),
+            get_string('etherpadlite', 'report_elearning'),
             get_string('sumwithoutfiles', 'report_elearning'),
             get_string('sum', 'report_elearning'));
         foreach ($headertitles as $headertitle) {

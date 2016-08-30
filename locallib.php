@@ -196,18 +196,6 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
         $sql .= "   ) AS LABELs,
                     (
                         SELECT COUNT(*)
-                          FROM {assign} a
-                          JOIN {course} c
-                            ON c.id = a.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS ASSIGNs,
-                    (
-                        SELECT COUNT(*)
                           FROM {url} k
                           JOIN {course} c
                             ON c.id = k.course
@@ -220,6 +208,18 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
         $sql .= "   ) AS LINKs,
                     (
                         SELECT COUNT(*)
+                          FROM {assign} a
+                          JOIN {course} c
+                            ON c.id = a.course
+                          JOIN {course_categories} cc
+                            ON cc.id = c.category";
+        // Omit hidden courses and categories.
+        if ($onlyvisible == true) {
+            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
+        }
+        $sql .= "   ) AS ASSIGNs,
+                    (
+                        SELECT COUNT(*)
                           FROM {forum} b
                           JOIN {course} c
                             ON c.id = b.course
@@ -229,7 +229,7 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
         if ($onlyvisible == true) {
             $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
         }
-        // Omit news forums.
+        // Omit announcements forums.
         if ($nonews == true) {
             $sql .= "          AND f.type != 'news'";
         }
@@ -356,9 +356,9 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
         $sql .= "   ) AS CHOICESGROUP,
                     (
                         SELECT COUNT(*)
-                          FROM {chat} b
+                          FROM {chat} z
                           JOIN {course} c
-                            ON c.id = b.course
+                            ON c.id = z.course
                           JOIN {course_categories} cc
                             ON cc.id = c.category";
         // Omit hidden courses and categories.
@@ -628,9 +628,9 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
         $sql .= "       ) AS CHOICESGROUP,
                         (
                             SELECT COUNT(*)
-                              FROM {chat} b
+                              FROM {chat} z
                               JOIN {course} c
-                                ON c.id = b.course
+                                ON c.id = z.course
                               JOIN {course_categories} cc
                                 ON cc.id = c.category
                              WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
@@ -653,7 +653,21 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
         if ($onlyvisible == true) {
             $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
         }
-        $sql .= "       ) AS WORKSHOPs
+        $sql .= "       ) AS WORKSHOPs,
+                        (
+                            SELECT COUNT(*)
+                              FROM {etherpadlite} x
+                              JOIN {course} c
+                                ON c.id = x.course
+                              JOIN {course_categories} cc
+                                ON cc.id = c.category
+                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
+                                OR cc.path LIKE CONCAT( '$categorypath' ))";
+        // Omit hidden courses and categories.
+        if ($onlyvisible == true) {
+            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
+        }
+        $sql .= "       ) AS ETHERPADs
                   FROM {course_categories} mcc
                  WHERE mcc.id = " . $category .
                " ORDER BY mcc.sortorder";
@@ -924,7 +938,20 @@ function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false) {
     if ($onlyvisible == true) {
         $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
     }
-    $sql .= "     ) AS WORKSHOPs
+    $sql .= "     ) AS WORKSHOPs,
+                  (
+                      SELECT COUNT( * )
+                        FROM {etherpadlite} x
+                        JOIN {course} c
+                          ON c.id = x.course
+                        JOIN {course_categories} cc
+                          ON cc.id = c.category
+                       WHERE c.id = mc.id";
+    // Omit hidden courses and categories.
+    if ($onlyvisible == true) {
+        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
+    }
+    $sql .= "     ) AS ETHERPADs
               FROM {course} mc
              WHERE mc.id = ?
           ORDER BY mc.sortorder";
@@ -953,6 +980,7 @@ function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false) {
         $returnobject[$courseid]->choicesgroup,
         $returnobject[$courseid]->chats,
         $returnobject[$courseid]->workshops,
+        $returnobject[$courseid]->etherpads,
                 (
                 $returnobject[$courseid]->pages +
                 $returnobject[$courseid]->labels +
@@ -970,7 +998,8 @@ function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false) {
                 $returnobject[$courseid]->choices +
                 $returnobject[$courseid]->choicesgroup +
                 $returnobject[$courseid]->chats +
-                $returnobject[$courseid]->workshops
+                $returnobject[$courseid]->workshops +
+                $returnobject[$courseid]->etherpads
                 ),
                 (
                 $returnobject[$courseid]->files +
@@ -991,8 +1020,8 @@ function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false) {
                 $returnobject[$courseid]->choices +
                 $returnobject[$courseid]->choicesgroup +
                 $returnobject[$courseid]->chats +
-                $returnobject[$courseid]->workshops
-
+                $returnobject[$courseid]->workshops +
+                $returnobject[$courseid]->etherpads
                 )
         );
 }

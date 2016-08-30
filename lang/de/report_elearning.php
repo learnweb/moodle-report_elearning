@@ -44,7 +44,7 @@ $string['courseincategorycountplural'] = 'Es gibt {$a->count} {$a->visibility} K
 $string['nocourseincategory'] = 'Es gibt keine Kurse in diesem Kursbereich (und seinen Unter-Kursbereichen).';
 $string['courseselector'] = "Kurse <a href='index.php?cn=fn'>vollst. Name</a> | <a href='index.php?cn=sn'>Kurzbezeichnung</a> | <a href='index.php?cn=id'>ID-Nummer</a>";
 $string['recap'] = '<p>Startpunkt Kursbereich {$a->category}, (context {$a->context}).</p>';
-$string['nonewsforum'] = 'Bei Forum \'Nachrichtenforum\' nicht mitzählen.';
+$string['nonewsforum'] = 'Bei Forum \'Ankündigungen\' nicht mitzählen.';
 $string['id'] = "ID";
 $string['category'] = "Kursbereich";
 $string['course'] = "Kurs";
@@ -70,5 +70,6 @@ $string['choice'] = "Abstimmung";
 $string['choicegroup'] = "Gruppenwahl";
 $string['chat'] = "Chat";
 $string['workshop'] = "Workshop";
+$string['etherpadlite'] = "Etherpad Lite";
 $string['sum'] = "Summe";
 $string['sumwithoutfiles'] = "Summe ohne Dateien und Verzeichnisse";

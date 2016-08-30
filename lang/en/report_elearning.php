@@ -44,7 +44,7 @@ $string['courseincategorycountplural'] = 'There are {$a->count} {$a->visibility}
 $string['nocourseincategory'] = 'There are no courses in this category (and its subcategories).';
 $string['courseselector'] = "Course <a href='index.php?cn=fn'>full name</a> | <a href='index.php?cn=sn'>short name</a> | <a href='index.php?cn=id'>course id</a>";
 $string['recap'] = '<p>Starting with category {$a->category}, (context {$a->context}).</p>';
-$string['nonewsforum'] = 'On forum, don\'t count the \'General news and announcements\' forum.';
+$string['nonewsforum'] = 'On forum, don\'t count the \'Announcements\' forum.';
 $string['id'] = "ID";
 $string['category'] = "Category";
 $string['course'] = "Course";
@@ -70,5 +70,6 @@ $string['choice'] = "Choice";
 $string['choicegroup'] = "Group Choice";
 $string['chat'] = "Chat";
 $string['workshop'] = "Workshop";
+$string['etherpadlite'] = "Etherpad Lite";
 $string['sum'] = "Sum";
 $string['sumwithoutfiles'] = "Sum without files and directories";
