@@ -57,7 +57,7 @@ class report_elearning_form extends moodleform {
             array_shift($components);
             $fullname = '';
             foreach ($components as $component) {
-                $fullname .= ' / ' . $coursecat[$component]->name;
+                $fullname .= ' / ' . format_string($coursecat[$component]->name);
             }
             $visiblecount = get_coursecategorycoursecount(get_coursecategorypath($cat->id), true);
             $invisiblecount = get_coursecategorycoursecount(get_coursecategorypath($cat->id), false);
@@ -89,7 +89,7 @@ class report_elearning_form extends moodleform {
  * This function limits the length of a string, cutting in the middle
  *
  * @see http://www.php.net/manual/en/function.substr.php#84775
- * 
+ *
  * @param string $value Input string
  * @param int $length Admissible length of string
  * @return string String with reduced length
@@ -110,7 +110,7 @@ function limitstringlength($value, $length = MAX_STRING_LEN) {
 
 /**
  * Returns the amount of courses in a certain category and its subcategories.
- * 
+ *
  * @param string $path The category path (e.g. /5/6).
  * @param boolean $onlyvisible Whether only visible courses should count.
  * @uses array $DB: database object
@@ -135,7 +135,7 @@ function get_coursecategorycoursecount($path, $onlyvisible=false) {
 
 /**
  * Returns the sql to create a e-learning report table.
- * 
+ *
  * @param int $category The category id.
  * @param boolean $onlyvisible Whether only visible courses should count.
  * @param boolean $nonews Whether news should be excluded from count.
@@ -677,7 +677,7 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
 
 /**
  * Returns the array of an e-learning report table course row.
- * 
+ *
  * @param int $courseid The course id.
  * @param boolean $onlyvisible Whether only visible courses should count.
  * @param boolean $nonews Whether news should be excluded from count.
@@ -1028,7 +1028,7 @@ function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false) {
 
 /**
  * Returns a formulated (fullname / fullname) category / sub-category path.
- * 
+ *
  * @param string $intpath A path with the ids and slashes (e.g. /2/8/10).
  * @return string $stringpath A formulated path.
  */
@@ -1038,7 +1038,7 @@ function get_stringpath($intpath) {
     array_shift($components);
     $fullname = '';
     foreach ($components as $component) {
-        $fullname .= ' / ' . $DB->get_field('course_categories', 'name', array('id' => $component));
+        $fullname .= ' / ' . format_string($DB->get_field('course_categories', 'name', array('id' => $component)));
     }
     return substr($fullname, 3);
 }
