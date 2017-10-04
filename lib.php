@@ -29,16 +29,15 @@ defined('MOODLE_INTERNAL') || die;
 /**
  * This function extends the navigation with the report items
  *
- * @param navigation_node $navigation The navigation node to extend
- * @param stdClass $course The course to object for the report
+ * @param settings_node $navigation The navigation node to extend
  * @param stdClass $context The context of the course
  */
-function report_elearning_extend_navigation_course($navigation, $course, $context) {
+
+function report_elearning_extend_settings_navigation(settings_navigation $navigation, context $context) {
     global $CFG, $OUTPUT;
     if (has_capability('report/elearning:view', $context)) {
-        $url = new moodle_url('/report/elearning/index.php', array('id' => $course->id, 'inpopup' => 1));
-        $action = new action_link($url, get_string('pluginname', 'report_elearning'), new popup_action('click', $url));
-        $navigation->add('', $action, navigation_node::TYPE_SETTING, null, null, new pix_icon('i/report', ''));
+        $url = new moodle_url('/report/elearning/index.php');
+        $navigation->add(get_string('pluginname', 'report_elearning'), $url, navigation_node::TYPE_SETTING,
+            null, null, new pix_icon('i/report', '', 'report_elearning'));
     }
 }
-
