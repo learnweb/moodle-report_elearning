@@ -73,3 +73,4 @@ $string['workshop'] = "Workshop";
 $string['etherpadlite'] = "Etherpad Lite";
 $string['sum'] = "Sum";
 $string['sumwithoutfiles'] = "Sum without files and directories";
+$string['privacy:metadata'] = 'E-Learning does not store any personal data';
