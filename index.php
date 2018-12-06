@@ -36,7 +36,6 @@ require_once($CFG->dirroot . '/report/elearning/locallib.php');
 require_once($CFG->dirroot . '/course/lib.php');
 
 global $CFG, $PAGE, $OUTPUT;
-
 require_login();
 $context = context_system::instance();
 $PAGE->set_context($context);
@@ -155,7 +154,6 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         }
         $headerrow->cells = $totalheadercells;
         $table->data[] = $headerrow;
-
         $rec = $DB->get_records_sql(get_tablesql($a->category, $elearningvisibility, $nonews));
         foreach ($rec as $records) {
             $id = $records->mccid;
@@ -269,17 +267,17 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             get_string('forum', 'report_elearning'),
             get_string('feedback', 'report_elearning'),
             get_string('quiz', 'report_elearning'),
-            get_string('scheduler', 'report_elearning'),
+            //get_string('scheduler', 'report_elearning'),
             get_string('survey', 'report_elearning'),
             get_string('database', 'report_elearning'),
             get_string('glossary', 'report_elearning'),
             get_string('journal', 'report_elearning'),
             get_string('wiki', 'report_elearning'),
             get_string('choice', 'report_elearning'),
-            get_string('choicegroup', 'report_elearning'),
+            //get_string('choicegroup', 'report_elearning'),
             get_string('chat', 'report_elearning'),
             get_string('workshop', 'report_elearning'),
-            get_string('etherpadlite', 'report_elearning'),
+            //get_string('etherpadlite', 'report_elearning'),
             get_string('sumwithoutfiles', 'report_elearning'),
             get_string('sum', 'report_elearning'));
         foreach ($headertitles as $headertitle) {
