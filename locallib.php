@@ -115,6 +115,7 @@ function limitstringlength($value, $length = MAX_STRING_LEN) {
  * @param boolean $onlyvisible Whether only visible courses should count.
  * @uses array $DB: database object
  * @return int $sql The report table creation SQL.
+ * @throws dml_exception
  */
 function get_coursecategorycoursecount($path, $onlyvisible=false) {
     global $DB;
@@ -135,6 +136,7 @@ function get_coursecategorycoursecount($path, $onlyvisible=false) {
 
 /**
  * Returns the sql to create a e-learning report table.
+ * supposed to list plugins in a dynamic way instead of static listing
  *
  * @param int $category The category id.
  * @param boolean $onlyvisible Whether only visible courses should count.
@@ -142,521 +144,57 @@ function get_coursecategorycoursecount($path, $onlyvisible=false) {
  * @uses array $DB: database object
  * @return string $sql The report table creation SQL.
  */
+
 function get_tablesql($category, $onlyvisible=false, $nonews=false) {
-    if ($category === 0) {
-        // Summary for the whole moodle installation.
-        $sql = "SELECT DISTINCT '' AS mccid, '' AS Category, '' AS mccpath,
-                   (
-                        SELECT COUNT(*)
-                          FROM {resource} r
-                          JOIN {course} c
-                            ON c.id = r.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS FILEs,
-                    (
-                        SELECT COUNT(*)
-                          FROM {folder} v
-                          JOIN {course} c
-                            ON c.id = v.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS DIRECTORIEs,
-                    (
-                        SELECT COUNT(*)
-                          FROM {page} p
-                          JOIN {course} c
-                            ON c.id = p.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS PAGEs,
-                    (
-                        SELECT COUNT(*)
-                          FROM {label} t
-                          JOIN {course} c
-                            ON c.id = t.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS LABELs,
-                    (
-                        SELECT COUNT(*)
-                          FROM {url} k
-                          JOIN {course} c
-                            ON c.id = k.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS LINKs,
-                    (
-                        SELECT COUNT(*)
-                          FROM {assign} a
-                          JOIN {course} c
-                            ON c.id = a.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS ASSIGNs,
-                    (
-                        SELECT COUNT(*)
-                          FROM {forum} b
-                          JOIN {course} c
-                            ON c.id = b.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        // Omit announcements forums.
-        if ($nonews == true) {
-            $sql .= "          AND f.type != 'news'";
-        }
-        $sql .= "   ) AS FORUMs,
-                    (
-                         SELECT COUNT(*)
-                           FROM {feedback} l
-                           JOIN {course} c
-                             ON c.id = l.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS FEEDBACKs,
-                    (
-                        SELECT COUNT(*)
-                          FROM {quiz} q
-                          JOIN {course} c
-                            ON c.id = q.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS QUIZs,";/*
-                    (
-                        SELECT COUNT(*)
-                          FROM {scheduler} s
-                          JOIN {course} c
-                            ON c.id = s.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS SCHEDULERs,*/
-        $sql .= "            (
-                        SELECT COUNT(*)
-                          FROM {survey} u
-                          JOIN {course} c
-                            ON c.id = u.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS SURVEYs,
-                    (
-                        SELECT COUNT(*)
-                          FROM {data} d
-                          JOIN {course} c
-                            ON c.id = d.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS DBs,
-                    (
-                        SELECT COUNT(*)
-                          FROM {glossary} g
-                          JOIN {course} c
-                            ON c.id = g.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS GLOSSARIEs,";/*
-                    (
-                        SELECT COUNT(*)
-                          FROM {journal} j
-                          JOIN {course} c
-                            ON c.id = j.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS JOURNALs,*/
-        $sql .="            (
-                        SELECT COUNT(*)
-                          FROM {wiki} w
-                          JOIN {course} c
-                            ON c.id = w.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS WIKIs,
-                    (
-                        SELECT COUNT(*)
-                          FROM {choice} h
-                          JOIN {course} c
-                            ON c.id = h.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS CHOICEs,";/*
-                    (
-                        SELECT COUNT(*)
-                          FROM {choicegroup} o
-                          JOIN {course} c
-                            ON c.id = o.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS CHOICESGROUP,*/
-        $sql .= "            (
-                        SELECT COUNT(*)
-                          FROM {chat} z
-                          JOIN {course} c
-                            ON c.id = z.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS CHATs,
-                    (
-                        SELECT COUNT(*)
-                          FROM {workshop} e
-                          JOIN {course} c
-                            ON c.id = e.course
-                          JOIN {course_categories} cc
-                            ON cc.id = c.category";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "   ) AS WORKSHOPs
-              FROM {course_categories} mcc";
-    } else {
-        // A category is given.
+    $pluginman = core_plugin_manager::instance();
+    //yeah i don't really know
+    //can't use category because that's for courses
+    $pluginarray = $pluginman -> get_installed_plugins(null);
+
+    if($category === 0){
+        $sql = "SELECT DISTINCT '' AS mccid, '' AS CATEGORY, '' AS mccpath,";
+    }else{
         $categorypath = get_coursecategorypath($category);
-        $sql = "SELECT mcc.id AS mccid, mcc.name AS Category, mcc.path AS mccpath,
-                       (
-                            SELECT COUNT(*)
-                              FROM {resource} r
-                              JOIN {course} c
-                                ON c.id = r.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
+        $sql = "SELECT mcc.id AS mccid, mcc.name AS Category, mcc.path AS mccpath,";
+    }
+
+    //so, let's put those bad boys into a proper statement shall we?
+
+    foreach($pluginarray as $plugin){
+        $sql .= "(
+                    SELECT COUNT(*)
+                    FROM {{$plugin}} p
+                    JOIN {course} c
+                    ON c.id = p.course
+                    JOIN {course_categories} cc
+                    ON cc.id = c.category";
+
+        //if a category has been given we need to filter for it
+        if($category !== 0){
+            $sql .= "WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
                                 OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
         }
-        $sql .= "       ) AS FILEs,
-                        (
-                            SELECT COUNT(*)
-                              FROM {folder} v
-                              JOIN {course} c
-                                ON c.id = v.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
+
+        // if we chose to only list visible courses, we don*t wan't invisible ones
+        if($onlyvisible){
+            $sql .= "   AND ((c.visible != 0) AND (cc.visible != 0))";
         }
-        $sql .= "       ) AS DIRECTORIEs,
-                        (
-                            SELECT COUNT(*)
-                              FROM {page} p
-                              JOIN {course} c
-                                ON c.id = p.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS PAGEs,
-                        (
-                            SELECT COUNT(*)
-                              FROM {label} t
-                              JOIN {course} c
-                                ON c.id = t.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS LABELs,
-                        (
-                            SELECT COUNT(*)
-                              FROM {url} k
-                              JOIN {course} c
-                                ON c.id = k.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS LINKs,
-                        (
-                            SELECT COUNT(*)
-                              FROM {assign} a
-                              JOIN {course} c
-                                ON c.id = a.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS ASSIGNs,
-                        (
-                            SELECT COUNT(*)
-                              FROM {forum} b
-                              JOIN {course} c
-                                ON c.id = b.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        // Omit news forums.
-        if ($nonews == true) {
-            $sql .= "          AND b.type != 'news'";
-        }
-        $sql .= "       ) AS FORUMs,
-                        (
-                             SELECT COUNT(*)
-                               FROM {feedback} l
-                               JOIN {course} c
-                                 ON c.id = l.course
-                               JOIN {course_categories} cc
-                                 ON cc.id = c.category
-                              WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                 OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS FEEDBACKs,
-                        (
-                            SELECT COUNT(*)
-                              FROM {quiz} q
-                              JOIN {course} c
-                                ON c.id = q.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-            // Omit hidden courses and categories.
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS QUIZs,
-                        ";/*(
-                            SELECT COUNT(*)
-                              FROM {scheduler} s
-                              JOIN {course} c
-                                ON c.id = s.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS SCHEDULERs,*/
-        $sql .= "                (
-                            SELECT COUNT(*)
-                              FROM {survey} u
-                              JOIN {course} c
-                                ON c.id = u.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS SURVEYs,
-                        (
-                            SELECT COUNT(*)
-                              FROM {data} d
-                              JOIN {course} c
-                                ON c.id = d.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS DBs,
-                        (
-                            SELECT COUNT(*)
-                              FROM {glossary} g
-                              JOIN {course} c
-                                ON c.id = g.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS GLOSSARIEs,
-                        ";/*(
-                            SELECT COUNT(*)
-                              FROM {journal} j
-                              JOIN {course} c
-                                ON c.id = j.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS JOURNALs,*/
-        $sql .= "                (
-                            SELECT COUNT(*)
-                              FROM {wiki} w
-                              JOIN {course} c
-                                ON c.id = w.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS WIKIs,
-                        (
-                            SELECT COUNT(*)
-                              FROM {choice} h
-                              JOIN {course} c
-                                ON c.id = h.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS CHOICEs,
-                        ";/*(
-                            SELECT COUNT(*)
-                              FROM {choicegroup} o
-                              JOIN {course} c
-                                ON c.id = o.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS CHOICESGROUP,*/
-        $sql .="                (
-                            SELECT COUNT(*)
-                              FROM {chat} z
-                              JOIN {course} c
-                                ON c.id = z.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS CHATs,
-                        (
-                            SELECT COUNT(*)
-                              FROM {workshop} e
-                              JOIN {course} c
-                                ON c.id = e.course
-                              JOIN {course_categories} cc
-                                ON cc.id = c.category
-                             WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        // Omit hidden courses and categories.
-        if ($onlyvisible == true) {
-            $sql .= "          AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        $sql .= "       ) AS WORKSHOPs
-                  FROM {course_categories} mcc
+
+        // but we still need to select them by a name so...
+        $pluginselas = strtoupper($plugin);
+        $sql .= "   ) AS {$pluginselas},";
+    }
+    // kill that trailing comma
+    $sql = mb_substr($sql, 0, -1);
+
+    // now let's add the FROM clauses
+
+    if($category === 0){
+        $sql .= "FROM {course_categories} mcc";
+    }else{
+        $sql .= " FROM {course_categories} mcc
                  WHERE mcc.id = " . $category .
-               " ORDER BY mcc.sortorder";
+                 " ORDER BY mcc.sortorder;";
     }
     return $sql;
 }
@@ -912,7 +450,7 @@ function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false) {
     if ($onlyvisible == true) {
         $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
     }
-    $sql .= "     ) AS CHATs,
+    $sql .= "     ) AS CHATs, 
                   (
                       SELECT COUNT( * )
                         FROM {workshop} e
