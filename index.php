@@ -15,11 +15,18 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 
-function getHeaders(){
+function getHeaders($nonrecursive = false){
     $pluginman = core_plugin_manager::instance();
     $pluginarray = $pluginman -> get_plugins_of_type("mod");
 
-    $returnarray = array("ID", "category");
+    $returnarray = array("ID");
+
+    if(!$nonrecursive){
+        array_push($returnarray, "category");
+    }else{
+        array_push($returnarray, "course");
+    }
+
     foreach($pluginarray as $pluigin) {
         array_push($returnarray, $pluigin -> name);
     }
@@ -176,40 +183,19 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         }
 
         // Single courses in this category, non-recursive.
+        // ok so this seems a little bit like unnecessary work, it might be better to just include this as an option
+        // however from my understanding the guy I cloned this project from is a major contributer and I just started
+        // so I'll just assume that he's right, I'm wrong and this is in fact useful.
         $detailheaderrow = new html_table_row();
         $detailheadercell = new html_table_cell(get_string('justcategory', 'report_elearning'));
         $detailheadercell->header = true;
-        $detailheadercell->colspan = 24;
+        $headertitles = getHeaders(true);
+        $detailheadercell->colspan = count($headertitles);
         $detailheaderrow->cells = array($detailheadercell);
         $table->data[] = $detailheaderrow;
         $courseheaderrow = new html_table_row();
         $headercells = array();
         // second table
-        $headertitles = array(
-            get_string('id', 'report_elearning'),
-            get_string('course', 'report_elearning'),
-            get_string('file', 'report_elearning'),
-            get_string('directory', 'report_elearning'),
-            get_string('page', 'report_elearning'),
-            get_string('label', 'report_elearning'),
-            get_string('url', 'report_elearning'),
-            get_string('assessment', 'report_elearning'),
-            get_string('forum', 'report_elearning'),
-            get_string('feedback', 'report_elearning'),
-            get_string('quiz', 'report_elearning'),
-            //get_string('scheduler', 'report_elearning'),
-            get_string('survey', 'report_elearning'),
-            get_string('database', 'report_elearning'),
-            get_string('glossary', 'report_elearning'),
-            get_string('journal', 'report_elearning'),
-            get_string('wiki', 'report_elearning'),
-            get_string('choice', 'report_elearning'),
-            //get_string('choicegroup', 'report_elearning'),
-            get_string('chat', 'report_elearning'),
-            get_string('workshop', 'report_elearning'),
-            //get_string('etherpadlite', 'report_elearning'),
-            get_string('sumwithoutfiles', 'report_elearning'),
-            get_string('sum', 'report_elearning'));
         foreach ($headertitles as $headertitle) {
             $cell = new html_table_cell($headertitle);
             $cell->header = true;

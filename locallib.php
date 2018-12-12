@@ -220,8 +220,10 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
  * @uses array $CFG: system configuration
  * @uses array $DB: database object
  * @return array $returnarray The report table array.
+ * @throws dml_exception
  */
-function get_coursetablecontent2($courseid, $onlyvisible=false, $nonews=false){
+function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false){
+    global $CFG, $DB;
     $sql = "SELECT mc.id, mc.fullname,";
     $pluginarray = get_all_plugin_names();
     foreach ($pluginarray as $plugin){
@@ -235,8 +237,11 @@ function get_coursetablecontent2($courseid, $onlyvisible=false, $nonews=false){
                        WHERE c.id = mc.id";
 
         if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
+            $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
+        }
+        if ($nonews == true and $plugin == "forum") {
+            $sql .= "       AND f.type != 'news'";
+        }
         $sql .= "     ) AS $plugin,";
     }
     // kill that trailing comma
@@ -245,345 +250,25 @@ function get_coursetablecontent2($courseid, $onlyvisible=false, $nonews=false){
     $sql .= " FROM {course} mc
               WHERE mc.id = ?
               ORDER BY mc.sortorder";
-}
 
-
-/**
- * Returns the array of an e-learning report table course row.
- *
- * @param int $courseid The course id.
- * @param boolean $onlyvisible Whether only visible courses should count.
- * @param boolean $nonews Whether news should be excluded from count.
- * @uses array $CFG: system configuration
- * @uses array $DB: database object
- * @return array $returnarray The report table array.
- */
-function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false) {
-    global $CFG, $DB;
-    $sql = "SELECT mc.id, mc.fullname,
-                  (
-                      SELECT COUNT( * )
-                        FROM {resource} r
-                        JOIN {course} c
-                          ON c.id = r.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS FILEs,
-                  (
-                      SELECT COUNT( * )
-                        FROM {folder} v
-                        JOIN {course} c
-                          ON c.id = v.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS DIRECTORIEs,
-                  (
-                      SELECT COUNT( * )
-                        FROM {page} p
-                        JOIN {course} c
-                          ON c.id = p.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS PAGEs,
-                  (
-                      SELECT COUNT( * )
-                        FROM {label} t
-                        JOIN {course} c
-                          ON c.id = t.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS LABELs,
-                  (
-                      SELECT COUNT( * )
-                        FROM {url} k
-                        JOIN {course} c
-                          ON c.id = k.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS LINKs,
-                  (
-                      SELECT COUNT( * )
-                        FROM {assign} a
-                        JOIN {course} c
-                          ON c.id = a.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS ASSIGNs,
-                  (
-                      SELECT COUNT( * )
-                        FROM {forum} f
-                        JOIN {course} c
-                          ON c.id = f.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    // Omit news forums.
-    if ($nonews == true) {
-         $sql .= "       AND f.type != 'news'";
-    }
-    $sql .= "     ) AS FORUMs,
-                  (
-                      SELECT COUNT( * )
-                        FROM {feedback} e
-                        JOIN {course} c
-                          ON c.id = e.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS FEEDBACKs,
-                  (
-                      SELECT COUNT( * )
-                        FROM {quiz} q
-                        JOIN {course} c
-                          ON c.id = q.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS QUIZs,
-                  ";/*(
-                      SELECT COUNT( * )
-                        FROM {scheduler} s
-                        JOIN {course} c
-                          ON c.id = s.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS SCHEDULERs,*/
-    $sql .= "             (
-                      SELECT COUNT( * )
-                        FROM {survey} u
-                        JOIN {course} c
-                          ON c.id = u.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS SURVEYs,
-                  (
-                      SELECT COUNT( * )
-                        FROM {data} d
-                        JOIN {course} c
-                          ON c.id = d.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS DBs,
-                  (
-                      SELECT COUNT( * )
-                        FROM {glossary} g
-                        JOIN {course} c
-                          ON c.id = g.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS GLOSSARIEs,
-                  ";/*(
-                      SELECT COUNT( * )
-                        FROM {journal} j
-                        JOIN {course} c
-                          ON c.id = j.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS JOURNALs,*/
-    $sql .= "              (
-                      SELECT COUNT( * )
-                        FROM {wiki} w
-                        JOIN {course} c
-                          ON c.id = w.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS WIKIs,
-                  (
-                      SELECT COUNT( * )
-                        FROM {choice} h
-                        JOIN {course} c
-                          ON c.id = h.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS CHOICEs,";/*
-                  (
-                      SELECT COUNT( * )
-                        FROM {choicegroup} o
-                        JOIN {course} c
-                          ON c.id = o.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS CHOICESGROUP,*/
-    $sql .="              (
-                      SELECT COUNT( * )
-                        FROM {chat} b
-                        JOIN {course} c
-                          ON c.id = b.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS CHATs, 
-                  (
-                      SELECT COUNT( * )
-                        FROM {workshop} e
-                        JOIN {course} c
-                          ON c.id = e.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-    }
-    $sql .= "     ) AS WORKSHOPs
-              FROM {course} mc
-             WHERE mc.id = ?
-          ORDER BY mc.sortorder";
-
+    //ok THIS is weird why is the table content handled in locallib but for the other table it's handled in index??
+    //TODO fix that mess
     $returnobject = $DB->get_records_sql($sql, array($courseid));
-    return array("<a href=\"$CFG->wwwroot/course/view.php?id=" . $returnobject[$courseid]->id . "\" target=\"_blank\">"
+    $returnarray = array("<a href=\"$CFG->wwwroot/course/view.php?id=" . $returnobject[$courseid]->id . "\" target=\"_blank\">"
         . $returnobject[$courseid]->id . "</a>",
         "<a href=\"$CFG->wwwroot/course/view.php?id="
-        . $returnobject[$courseid]->id . "\" target=\"_blank\">" . $returnobject[$courseid]->fullname . "</a>",
-        $returnobject[$courseid]->files,
-        $returnobject[$courseid]->directories,
-        $returnobject[$courseid]->pages,
-        $returnobject[$courseid]->labels,
-        $returnobject[$courseid]->links,
-        $returnobject[$courseid]->assigns,
-        $returnobject[$courseid]->forums,
-        $returnobject[$courseid]->feedbacks,
-        $returnobject[$courseid]->quizs,
-        //$returnobject[$courseid]->schedulers,
-        $returnobject[$courseid]->surveys,
-        $returnobject[$courseid]->dbs,
-        $returnobject[$courseid]->glossaries,
-        //$returnobject[$courseid]->journals,
-        $returnobject[$courseid]->wikis,
-        $returnobject[$courseid]->choices,
-        //$returnobject[$courseid]->choicesgroup,
-        $returnobject[$courseid]->chats,
-        $returnobject[$courseid]->workshops,
-        //$returnobject[$courseid]->etherpads,
-                (
-                $returnobject[$courseid]->pages +
-                $returnobject[$courseid]->labels +
-                $returnobject[$courseid]->links +
-                $returnobject[$courseid]->assigns +
-                $returnobject[$courseid]->forums +
-                $returnobject[$courseid]->feedbacks +
-                $returnobject[$courseid]->quizs +
-//                $returnobject[$courseid]->schedulers +
-                $returnobject[$courseid]->surveys +
-                $returnobject[$courseid]->dbs +
-                $returnobject[$courseid]->glossaries +
-//                $returnobject[$courseid]->journals +
-                $returnobject[$courseid]->wikis +
-                $returnobject[$courseid]->choices +
-//                $returnobject[$courseid]->choicesgroup +
-                $returnobject[$courseid]->chats +
-                $returnobject[$courseid]->workshops //+
-//                $returnobject[$courseid]->etherpads
-                ),
-                (
-                $returnobject[$courseid]->files +
-                $returnobject[$courseid]->directories +
-                $returnobject[$courseid]->pages +
-                $returnobject[$courseid]->labels +
-                $returnobject[$courseid]->links +
-                $returnobject[$courseid]->assigns +
-                $returnobject[$courseid]->forums +
-                $returnobject[$courseid]->feedbacks +
-                $returnobject[$courseid]->quizs +
-//                $returnobject[$courseid]->schedulers +
-                $returnobject[$courseid]->surveys +
-                $returnobject[$courseid]->dbs +
-                $returnobject[$courseid]->glossaries +
-//                $returnobject[$courseid]->journals +
-                $returnobject[$courseid]->wikis +
-                $returnobject[$courseid]->choices +
-//                $returnobject[$courseid]->choicesgroup +
-                $returnobject[$courseid]->chats +
-                $returnobject[$courseid]->workshops //+
-//                $returnobject[$courseid]->etherpads
-                )
-        );
+        . $returnobject[$courseid]->id . "\" target=\"_blank\">" . $returnobject[$courseid]->fullname . "</a>");
+    $total = 0;
+    $totalnfnd = 0;
+    foreach($pluginarray as $plugin){
+        if($plugin != "resource" and $plugin != "folder"){
+            $totalnfnd += $returnobject[$courseid] -> $plugin;
+        }
+        $total += $returnobject[$courseid] -> $plugin;
+        array_push($returnarray, $returnobject[$courseid] -> $plugin);
+    }
+    array_push($returnarray, $total, $totalnfnd);
+    return $returnarray;
 }
 
 /**
