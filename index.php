@@ -35,7 +35,7 @@ function getHeaders($nonrecursive = false, $humanreadable = false){
         }
     }
     array_push($returnarray, "Sum");
-    array_push($returnarray,"Sum without files and directories");
+    array_push($returnarray,"Sum without files and folders");
 
 
     return $returnarray;
@@ -174,7 +174,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
                         "\" target=\"_blank\">" . get_stringpath($records->mccpath) . "</a><!--(" . $records->mccpath . ")-->" );
                 }else if($category == "Sum") {
                     array_push($tablearray, $total);
-                }else if($category == "Sum without files and directories"){
+                }else if($category == "Sum without files and folders"){
                     array_push($tablearray, $totalnfnd);
                 }else{
                     $total += $records -> $category;
