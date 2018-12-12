@@ -30,6 +30,8 @@ require_once($CFG->libdir . '/formslib.php');
  *
  * @copyright  2015 BFH-TI, Luca Bösch
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ * works for now
  */
 class report_elearning_form extends moodleform {
 
