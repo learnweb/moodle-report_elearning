@@ -14,6 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+
+function getHeaders(){
+    $pluginman = core_plugin_manager::instance();
+    $pluginarray = $pluginman -> get_plugins_of_type("mod");
+
+    $returnarray = array("ID", "category");
+    foreach($pluginarray as $pluigin) {
+        array_push($returnarray, $pluigin -> name);
+    }
+    array_push($returnarray, "Sum");
+    array_push($returnarray,"Sum without files and directories");
+
+
+    return $returnarray;
+}
+
+
 /**
  * Displays e-learning statistics data selection form and results.
  * @package    report_elearning
@@ -115,38 +132,15 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $totalheaderrow = new html_table_row();
         $totalheadercell = new html_table_cell(get_string('categorytotal', 'report_elearning'));
         $totalheadercell->header = true;
-        $totalheadercell->colspan = 24;
+        $totalheadertitles = getHeaders();
+        $totalheadercell->colspan = count($totalheadertitles);
         $totalheadercell->attributes['class'] = 'c0';
         $totalheaderrow->cells = array($totalheadercell);
         $table->data[] = $totalheaderrow;
 
         $headerrow = new html_table_row();
         $totalheadercells = array();
-        $totalheadertitles = array(get_string('id', 'report_elearning'),
-            get_string('category', 'report_elearning'),
-            get_string('file', 'report_elearning'),
-            get_string('directory', 'report_elearning'),
-            get_string('page', 'report_elearning'),
-            get_string('label', 'report_elearning'),
-            get_string('url', 'report_elearning'),
-            get_string('assessment', 'report_elearning'),
-            get_string('forum', 'report_elearning'),
-            get_string('feedback', 'report_elearning'),
-            get_string('quiz', 'report_elearning'),
-            get_string('scheduler', 'report_elearning'),
-            get_string('survey', 'report_elearning'),
-            get_string('database', 'report_elearning'),
-            get_string('glossary', 'report_elearning'),
-            get_string('journal', 'report_elearning'),
-            get_string('wiki', 'report_elearning'),
-            get_string('choice', 'report_elearning'),
-            get_string('choicegroup', 'report_elearning'),
-            get_string('chat', 'report_elearning'),
-            get_string('workshop', 'report_elearning'),
-            get_string('etherpadlite', 'report_elearning'),
-            get_string('sumwithoutfiles', 'report_elearning'),
-            get_string('sum', 'report_elearning')
-            );
+        //first table
         foreach ($totalheadertitles as $totalheadertitle) {
             $cell = new html_table_cell($totalheadertitle);
             $cell->header = true;
@@ -156,94 +150,29 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $table->data[] = $headerrow;
         $rec = $DB->get_records_sql(get_tablesql($a->category, $elearningvisibility, $nonews));
         foreach ($rec as $records) {
-            $id = $records->mccid;
-            $scheduledatet = $records->category;
-            $files = $records->files;
-            $directories = $records->directories;
-            $pages = $records->pages;
-            $labels = $records->labels;
-            $links = $records->links;
-            $assigns = $records->assigns;
-            $forums = $records->forums;
-            $feedbacks = $records->feedbacks;
-            $quizzes = $records->quizs;
-            $schedulers = $records->schedulers;
-            $surveys = $records->surveys;
-            $dbs = $records->dbs;
-            $glossaries = $records->glossaries;
-            $journals = $records->journals;
-            $wikis = $records->wikis;
-            $choices = $records->choices;
-            $choicesgroup = $records->choicesgroup;
-            $chats = $records->chats;
-            $workshops = $records->workshops;
-            $etherpads = $records->etherpads;
-            $table->data[] = array("<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $id .
-                "\" target=\"_blank\">" . $id . "</a>", "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $id .
-                "\" target=\"_blank\">" . get_stringpath($records->mccpath) . "</a><!--(" . $records->mccpath . ")-->",
-                $files,
-                $directories,
-                $pages,
-                $labels,
-                $links,
-                $assigns,
-                $forums,
-                $feedbacks,
-                $quizzes,
-                $schedulers,
-                $surveys,
-                $dbs,
-                $glossaries,
-                $journals,
-                $wikis,
-                $choices,
-                $choicesgroup,
-                $chats,
-                $workshops,
-                $etherpads,
-                (
-                        $pages +
-                        $labels +
-                        $links +
-                        $assigns +
-                        $forums +
-                        $feedbacks +
-                        $quizzes +
-                        $schedulers +
-                        $surveys +
-                        $dbs +
-                        $glossaries +
-                        $journals +
-                        $wikis +
-                        $choices +
-                        $choicesgroup +
-                        $chats +
-                        $workshops +
-                        $etherpads
-                        ),
-                (
-                        $files +
-                        $directories +
-                        $pages +
-                        $labels +
-                        $links +
-                        $assigns +
-                        $forums +
-                        $feedbacks +
-                        $quizzes +
-                        $schedulers +
-                        $surveys +
-                        $dbs +
-                        $glossaries +
-                        $journals +
-                        $wikis +
-                        $choices +
-                        $choicesgroup +
-                        $chats +
-                        $workshops +
-                        $etherpads
-                        )
-                );
+            $tablearray = array();
+            $total = 0;
+            $totalnfnd = 0;
+            foreach ($totalheadertitles as $category){
+                if($category == "ID") {
+                    array_push($tablearray, "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $records->mccid .
+                        "\" target=\"_blank\">" . $records->mccid . "</a>");
+                }else if($category == "category"){
+                    array_push($tablearray,  "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $records -> mccid .
+                        "\" target=\"_blank\">" . get_stringpath($records->mccpath) . "</a><!--(" . $records->mccpath . ")-->" );
+                }else if($category == "Sum") {
+                    array_push($tablearray, $total);
+                }else if($category == "Sum without files and directories"){
+                    array_push($tablearray, $totalnfnd);
+                }else{
+                    $total += $records -> $category;
+                    if($category != "folder" and $category != "resource"){
+                        $totalnfnd += $records -> $category;
+                    }
+                    array_push($tablearray, $records -> $category);
+                }
+            }
+            $table-> data[] = $tablearray;
         }
 
         // Single courses in this category, non-recursive.
@@ -255,6 +184,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $table->data[] = $detailheaderrow;
         $courseheaderrow = new html_table_row();
         $headercells = array();
+        // second table
         $headertitles = array(
             get_string('id', 'report_elearning'),
             get_string('course', 'report_elearning'),

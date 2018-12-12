@@ -134,23 +134,32 @@ function get_coursecategorycoursecount($path, $onlyvisible=false) {
     return(count($DB->get_records_sql($sql)));
 }
 
+function get_all_plugin_names(){
+    $pluginman = core_plugin_manager::instance();
+    $pluginarray = $pluginman -> get_plugins_of_type("mod");
+
+    $returnarray = array();
+    foreach($pluginarray as $pluigin) {
+        array_push($returnarray, $pluigin->name);
+    }
+
+
+    return $returnarray;
+}
+
 /**
  * Returns the sql to create a e-learning report table.
  * supposed to list plugins in a dynamic way instead of static listing
  *
  * @param int $category The category id.
  * @param boolean $onlyvisible Whether only visible courses should count.
- * @param boolean $nonews Whether news should be excluded from count.
+ * @param boolean $nonews Whether news should be excluded from count. applys to forum NYI
  * @uses array $DB: database object
  * @return string $sql The report table creation SQL.
  */
 
 function get_tablesql($category, $onlyvisible=false, $nonews=false) {
-    $pluginman = core_plugin_manager::instance();
-    //yeah i don't really know
-    //can't use category because that's for courses
-    $pluginarray = $pluginman -> get_installed_plugins(null);
-
+    $pluginarray = get_all_plugin_names();
     if($category === 0){
         $sql = "SELECT DISTINCT '' AS mccid, '' AS CATEGORY, '' AS mccpath,";
     }else{
@@ -159,8 +168,10 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
     }
 
     //so, let's put those bad boys into a proper statement shall we?
-
     foreach($pluginarray as $plugin){
+        if(strpos($plugin, " ")!==false){
+            continue;
+        }
         $sql .= "(
                     SELECT COUNT(*)
                     FROM {{$plugin}} p
@@ -171,7 +182,7 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
 
         //if a category has been given we need to filter for it
         if($category !== 0){
-            $sql .= "WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
+            $sql .= " WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
                                 OR cc.path LIKE CONCAT( '$categorypath' ))";
         }
 
@@ -197,6 +208,43 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
                  " ORDER BY mcc.sortorder;";
     }
     return $sql;
+}
+
+
+/**
+ * Returns the array of an e-learning report table course row.
+ *
+ * @param int $courseid The course id.
+ * @param boolean $onlyvisible Whether only visible courses should count.
+ * @param boolean $nonews Whether news should be excluded from count.
+ * @uses array $CFG: system configuration
+ * @uses array $DB: database object
+ * @return array $returnarray The report table array.
+ */
+function get_coursetablecontent2($courseid, $onlyvisible=false, $nonews=false){
+    $sql = "SELECT mc.id, mc.fullname,";
+    $pluginarray = get_all_plugin_names();
+    foreach ($pluginarray as $plugin){
+        $sql .= "(
+                      SELECT COUNT( * )
+                        FROM {{$plugin}} r
+                        JOIN {course} c
+                          ON c.id = r.course
+                        JOIN {course_categories} cc
+                          ON cc.id = c.category
+                       WHERE c.id = mc.id";
+
+        if ($onlyvisible == true) {
+        $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
+    }
+        $sql .= "     ) AS $plugin,";
+    }
+    // kill that trailing comma
+    $sql = mb_substr($sql, 0, -1);
+
+    $sql .= " FROM {course} mc
+              WHERE mc.id = ?
+              ORDER BY mc.sortorder";
 }
 
 
