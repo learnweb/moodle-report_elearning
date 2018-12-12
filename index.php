@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 
-function getHeaders($nonrecursive = false){
+function getHeaders($nonrecursive = false, $humanreadable = false){
     $pluginman = core_plugin_manager::instance();
     $pluginarray = $pluginman -> get_plugins_of_type("mod");
 
@@ -28,7 +28,11 @@ function getHeaders($nonrecursive = false){
     }
 
     foreach($pluginarray as $pluigin) {
-        array_push($returnarray, $pluigin -> name);
+        if(!$humanreadable) {
+            array_push($returnarray, $pluigin->name);
+        }else{
+            array_push($returnarray, get_string("pluginname", $pluigin->name));
+        }
     }
     array_push($returnarray, "Sum");
     array_push($returnarray,"Sum without files and directories");
@@ -148,7 +152,8 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $headerrow = new html_table_row();
         $totalheadercells = array();
         //first table
-        foreach ($totalheadertitles as $totalheadertitle) {
+        $totalheadertitlesNice = getHeaders(false,true);
+        foreach ($totalheadertitlesNice as $totalheadertitle) {
             $cell = new html_table_cell($totalheadertitle);
             $cell->header = true;
             $totalheadercells[] = $cell;
@@ -196,7 +201,8 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $courseheaderrow = new html_table_row();
         $headercells = array();
         // second table
-        foreach ($headertitles as $headertitle) {
+        $headertitles = getHeaders(true, true);
+        foreach ($totalheadertitlesNice as $headertitle) {
             $cell = new html_table_cell($headertitle);
             $cell->header = true;
             $headercells[] = $cell;
