@@ -51,7 +51,7 @@ function getHeaders($nonrecursive = false, $humanreadable = false){
 /**
  * Moodle E-Learning-Strategie Report
  *
- * Main file for report
+ * Main file for report+
  *
  * @see doc/html/ for documentation
  *
