@@ -172,68 +172,6 @@ function get_all_mod_names(){
 }
 
 /**
- * Returns the sql to create a e-learning report table.
- * supposed to list plugins in a dynamic way instead of static listing
- *
- * @param int $category The category id.
- * @param boolean $onlyvisible Whether only visible courses should count.
- * @param boolean $nonews Whether news should be excluded from count. applys to forum NYI
- * @uses array $DB: database object
- * @return string $sql The report table creation SQL.
- */
-
-function get_tablesql($category, $onlyvisible=false, $nonews=false) {
-    $pluginarray = get_all_mod_names();
-    if($category === 0){
-        $sql = "SELECT mcc.id AS mccid, mcc.name AS CATEGORY, mcc.path AS mccpath,";
-    }else{
-        $categorypath = get_coursecategorypath($category);
-        $sql = "SELECT mcc.id AS mccid, mcc.name AS Category, mcc.path AS mccpath,";
-    }
-
-    foreach($pluginarray as $plugin){
-        if(strpos($plugin, " ")!==false){
-            continue;
-        }
-        $sql .= "(
-                    SELECT COUNT(*)
-                    FROM {{$plugin}} p
-                    JOIN {course} c
-                    ON c.id = p.course
-                    JOIN {course_categories} cc
-                    ON cc.id = c.category";
-
-        //if a category has been given we need to filter for it
-        if($category !== 0 or true){
-            $sql .= " WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
-        }
-
-        // if we chose to only list visible courses, we don*t wan't invisible ones
-        if($onlyvisible){
-            $sql .= "   AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-
-        // but we still need to select them by a name so...
-        $sql .= "   ) AS {$plugin},";
-    }
-    // kill that trailing comma
-    $sql = mb_substr($sql, 0, -1);
-
-    // now let's add the FROM clauses
-
-    if($category == 0){
-        $sql .= " FROM {course_categories} mcc";
-    }else{
-        $sql .= " FROM {course_categories} mcc
-                 WHERE mcc.id = " . $category .
-                 " ORDER BY mcc.sortorder;";
-    }
-    return $sql;
-}
-
-
-/**
  * Returns the array of an e-learning report table course row.
  *
  * @param int $courseid The course id.

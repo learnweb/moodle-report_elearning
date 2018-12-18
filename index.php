@@ -148,6 +148,8 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $resultstring .= "<br />&#160;<br />\n";
         // Write a table with 24 columns.
         $table = new html_table();
+        $data1 = array();
+        $data2 = array();
         // Added up courses in this category, recursive.
         $totalheaderrow = new html_table_row();
         $totalheadercell = new html_table_cell(get_string('categorytotal', 'report_elearning'));
@@ -156,7 +158,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $totalheadercell->colspan = count($totalheadertitles);
         $totalheadercell->attributes['class'] = 'c0';
         $totalheaderrow->cells = array($totalheadercell);
-        $table->data[] = $totalheaderrow;
+        $data1[] = $totalheaderrow;
 
         $headerrow = new html_table_row();
         $totalheadercells = array();
@@ -168,8 +170,107 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             $totalheadercells[] = $cell;
         }
         $headerrow->cells = $totalheadercells;
-        $table->data[] = $headerrow;
-        $rec = $DB->get_records_sql(get_tablesql($a->category, $elearningvisibility, $nonews));
+        $data1[] = $headerrow;
+        $rec = get_array_for_categories(1, $totalheadertitles);
+
+        // Single courses in this category, non-recursive.
+        // ok so this seems a little bit like unnecessary work, it might be better to just include this as an option
+        // however from my understanding the guy I cloned this project from is a major contributer and I just started
+        // so I'll just assume that he's right, I'm wrong and this is in fact useful.
+        $detailheaderrow = new html_table_row();
+        $detailheadercell = new html_table_cell(get_string('justcategory', 'report_elearning'));
+        $detailheadercell->header = true;
+        $headertitles = getHeaders(true, true);
+        $detailheadercell->colspan = count($headertitles);
+        $detailheaderrow->cells = array($detailheadercell);
+        $data2[] = $detailheaderrow;
+        $courseheaderrow = new html_table_row();
+        $headercells = array();
+        // second table
+        foreach ($headertitles as $headertitle) {
+            $cell = new html_table_cell($headertitle);
+            $cell->header = true;
+            $headercells[] = $cell;
+        }
+        $courseheaderrow->cells = $headercells;
+        $data2[] = $courseheaderrow;
+
+        if ($a->category == 0) {
+            // All courses.
+            if ($elearningvisibility == true) {
+                $coursesincategorysql = "SELECT id, category"
+                        . "                FROM {course}"
+                        . "               WHERE visible <> 0"
+                        . "                 AND id > 1"
+                        . "            ORDER BY sortorder";
+            } else {
+                $coursesincategorysql = "SELECT id, category"
+                        . "                FROM {course}"
+                        . "               WHERE id > 1"
+                        . "            ORDER BY sortorder";
+            }
+            $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
+        } else {
+            if ($elearningvisibility == true) {
+                $coursesincategorysql = "SELECT id, category"
+                        . "                FROM {course}"
+                        . "               WHERE category = ?"
+                        . "                 AND visible <> 0"
+                        . "            ORDER BY sortorder";
+            } else {
+                $coursesincategorysql = "SELECT id, category"
+                        . "                FROM {course}"
+                        . "               WHERE category = ?"
+                        . "            ORDER BY sortorder";
+            }
+            $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
+        }
+        foreach ($coursesincategory as $courserec) {
+            $courseid = $courserec -> id;
+            $coursecat = $courserec -> category;
+            $headerarray = getHeaders(true,false);
+            // performing double shift so ID and course don't count.
+            array_shift($headerarray);
+            array_shift($headerarray);
+            // same goes for the end with those "sums" trailing there
+            array_pop($headerarray);
+            array_pop($headerarray);
+            $returnobject = $DB->get_records_sql(get_coursetablecontent($courseid, $elearningvisibility, $nonews), array($courseid));
+            $tablecontent = merge_block_and_mod($returnobject, blocks_DB($courseid), $courseid);
+            $returnarray = array("<a href=\"$CFG->wwwroot/course/view.php?id=" . $tablecontent->id . "\" target=\"_blank\">"
+                . $tablecontent->id . "</a>",
+                "<a href=\"$CFG->wwwroot/course/view.php?id="
+                . $tablecontent->id . "\" target=\"_blank\">" . $tablecontent->fullname . "</a>");
+            $total = 0;
+            $totalnfnd = 0;
+            foreach($headerarray as $plugin) {
+                if (property_exists($tablecontent, $plugin)) {
+                    if ($plugin != "resource" and $plugin != "folder") {
+                        $totalnfnd += $tablecontent->$plugin;
+                    }
+                    $total += $tablecontent->$plugin;
+                    array_push($returnarray, $tablecontent->$plugin);
+                    if(array_key_exists($coursecat, $rec)){
+                        //hooray that's the easy way
+                        $rec[$coursecat] -> $plugin += $tablecontent->$plugin;
+                    }else{
+                        //hrmpf
+                        foreach($rec as $cat){
+                            if(strpos($cat->subcats, $coursecat) !== false){
+                                $cat -> $plugin += $tablecontent->$plugin;
+                                break;
+                            }
+                        }
+                    }
+                }else{
+                    array_push($returnarray, 0);
+                }
+            }
+            array_push($returnarray, $total, $totalnfnd);
+
+            $data2[] = $returnarray;
+        }
+
         foreach ($rec as $records) {
             $tablearray = array();
             $total = 0;
@@ -193,93 +294,11 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
                     array_push($tablearray, $records -> $category);
                 }
             }
-            $table-> data[] = $tablearray;
+            $data1[] = $tablearray;
         }
 
-        // Single courses in this category, non-recursive.
-        // ok so this seems a little bit like unnecessary work, it might be better to just include this as an option
-        // however from my understanding the guy I cloned this project from is a major contributer and I just started
-        // so I'll just assume that he's right, I'm wrong and this is in fact useful.
-        $detailheaderrow = new html_table_row();
-        $detailheadercell = new html_table_cell(get_string('justcategory', 'report_elearning'));
-        $detailheadercell->header = true;
-        $headertitles = getHeaders(true, true);
-        $detailheadercell->colspan = count($headertitles);
-        $detailheaderrow->cells = array($detailheadercell);
-        $table->data[] = $detailheaderrow;
-        $courseheaderrow = new html_table_row();
-        $headercells = array();
-        // second table
-        foreach ($headertitles as $headertitle) {
-            $cell = new html_table_cell($headertitle);
-            $cell->header = true;
-            $headercells[] = $cell;
-        }
-        $courseheaderrow->cells = $headercells;
-        $table->data[] = $courseheaderrow;
+        $table -> data = array_merge($data1, $data2);
 
-        if ($a->category == 0) {
-            // All courses.
-            if ($elearningvisibility == true) {
-                $coursesincategorysql = "SELECT id"
-                        . "                FROM {course}"
-                        . "               WHERE visible <> 0"
-                        . "                 AND id > 1"
-                        . "            ORDER BY sortorder";
-            } else {
-                $coursesincategorysql = "SELECT id"
-                        . "                FROM {course}"
-                        . "               WHERE id > 1"
-                        . "            ORDER BY sortorder";
-            }
-            $coursesincategory = $DB->get_fieldset_sql($coursesincategorysql, array($a->category));
-        } else {
-            if ($elearningvisibility == true) {
-                $coursesincategorysql = "SELECT id"
-                        . "                FROM {course}"
-                        . "               WHERE category = ?"
-                        . "                 AND visible <> 0"
-                        . "            ORDER BY sortorder";
-            } else {
-                $coursesincategorysql = "SELECT id"
-                        . "                FROM {course}"
-                        . "               WHERE category = ?"
-                        . "            ORDER BY sortorder";
-            }
-            $coursesincategory = $DB->get_fieldset_sql($coursesincategorysql, array($a->category));
-        }
-        foreach ($coursesincategory as $courseid) {
-            $headerarray = getHeaders(true,false);
-            // performing double shift so ID and course don't count.
-            array_shift($headerarray);
-            array_shift($headerarray);
-            // same goes for the end with those "sums" trailing there
-            array_pop($headerarray);
-            array_pop($headerarray);
-
-            $returnobject = $DB->get_records_sql(get_coursetablecontent($courseid, $elearningvisibility, $nonews), array($courseid));
-            $tablecontent = merge_block_and_mod($returnobject, blocks_DB($courseid), $courseid);
-            $returnarray = array("<a href=\"$CFG->wwwroot/course/view.php?id=" . $tablecontent->id . "\" target=\"_blank\">"
-                . $tablecontent->id . "</a>",
-                "<a href=\"$CFG->wwwroot/course/view.php?id="
-                . $tablecontent->id . "\" target=\"_blank\">" . $tablecontent->fullname . "</a>");
-            $total = 0;
-            $totalnfnd = 0;
-            foreach($headerarray as $plugin) {
-                if (property_exists($tablecontent, $plugin)) {
-                    if ($plugin != "resource" and $plugin != "folder") {
-                        $totalnfnd += $tablecontent->$plugin;
-                    }
-                    $total += $tablecontent->$plugin;
-                    array_push($returnarray, $tablecontent->$plugin);
-                }else{
-                    array_push($returnarray, 0);
-                }
-            }
-            array_push($returnarray, $total, $totalnfnd);
-
-            $table->data[] = $returnarray;
-        }
         if ($download == true) {
             $filename = "Export-E-Learning-" . date("Y-m-d-H-i-s") . ".xls";
             header("Content-type: application/x-msexcel");
@@ -362,6 +381,45 @@ function merge_block_and_mod($mod, $blocks, $courseid){
     }
 
     return $mod;
+}
+
+function get_array_for_categories($max_depth, $columns){
+    global $DB;
+
+    // performing double shift so ID and course don't count.
+    array_shift($columns);
+    array_shift($columns);
+    // same goes for the end with those "sums" trailing there
+    array_pop($columns);
+    array_pop($columns);
+
+    $categorys = $DB -> get_records_sql("
+    SELECT id, name, path, depth FROM {course_categories};");
+    $a = new stdClass();
+    foreach ($columns as $column){
+        $a -> $column = "0";
+    }
+
+    foreach($categorys as $category){
+        $category -> subcats = "";
+        if($category -> depth > $max_depth){
+            $parentpos = explode("/", $category -> path);
+            $parent = $parentpos[$max_depth];
+
+            $categorys[$parent] -> subcats .= $category->id . ";";
+            unset($categorys[$category->id]);
+        }
+    }
+
+    foreach($categorys as $category){
+        $category -> mccid = $category -> id;
+        $category -> mccpath = $category -> path;
+        unset($category -> depth);
+        $category = array_merge((array) $category, (array) $a);
+        $categorys[$category["id"]] = (object) $category;
+    }
+
+    return $categorys;
 }
 
 echo $OUTPUT->footer();
