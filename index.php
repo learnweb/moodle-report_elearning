@@ -203,15 +203,14 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $detailheaderrow = new html_table_row();
         $detailheadercell = new html_table_cell(get_string('justcategory', 'report_elearning'));
         $detailheadercell->header = true;
-        $headertitles = getHeaders(true);
+        $headertitles = getHeaders(true, true);
         $detailheadercell->colspan = count($headertitles);
         $detailheaderrow->cells = array($detailheadercell);
         $table->data[] = $detailheaderrow;
         $courseheaderrow = new html_table_row();
         $headercells = array();
         // second table
-        $headertitles = getHeaders(true, true);
-        foreach ($totalheadertitlesNice as $headertitle) {
+        foreach ($headertitles as $headertitle) {
             $cell = new html_table_cell($headertitle);
             $cell->header = true;
             $headercells[] = $cell;
@@ -250,7 +249,36 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             $coursesincategory = $DB->get_fieldset_sql($coursesincategorysql, array($a->category));
         }
         foreach ($coursesincategory as $courseid) {
-            $table->data[] = get_coursetablecontent($courseid, $elearningvisibility, $nonews);
+            $headerarray = getHeaders(true,false);
+            // performing double shift so ID and course don't count.
+            array_shift($headerarray);
+            array_shift($headerarray);
+            // same goes for the end with those "sums" trailing there
+            array_pop($headerarray);
+            array_pop($headerarray);
+
+            $returnobject = $DB->get_records_sql(get_coursetablecontent($courseid, $elearningvisibility, $nonews), array($courseid));
+            $tablecontent = merge_block_and_mod($returnobject, blocks_DB($courseid), $courseid);
+            $returnarray = array("<a href=\"$CFG->wwwroot/course/view.php?id=" . $tablecontent->id . "\" target=\"_blank\">"
+                . $tablecontent->id . "</a>",
+                "<a href=\"$CFG->wwwroot/course/view.php?id="
+                . $tablecontent->id . "\" target=\"_blank\">" . $tablecontent->fullname . "</a>");
+            $total = 0;
+            $totalnfnd = 0;
+            foreach($headerarray as $plugin) {
+                if (property_exists($tablecontent, $plugin)) {
+                    if ($plugin != "resource" and $plugin != "folder") {
+                        $totalnfnd += $tablecontent->$plugin;
+                    }
+                    $total += $tablecontent->$plugin;
+                    array_push($returnarray, $tablecontent->$plugin);
+                }else{
+                    array_push($returnarray, 0);
+                }
+            }
+            array_push($returnarray, $total, $totalnfnd);
+
+            $table->data[] = $returnarray;
         }
         if ($download == true) {
             $filename = "Export-E-Learning-" . date("Y-m-d-H-i-s") . ".xls";
@@ -323,6 +351,17 @@ function dbg($line, $param = null, $mustdie = false) {
             die();
         }
     }
+}
+
+function merge_block_and_mod($mod, $blocks, $courseid){
+    $mod = $mod[$courseid];
+
+    foreach ($blocks as $block){
+        $blockname = "block_" . $block->blockname;
+        $mod -> $blockname = $block->count;
+    }
+
+    return $mod;
 }
 
 echo $OUTPUT->footer();

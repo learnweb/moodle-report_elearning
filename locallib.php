@@ -106,7 +106,7 @@ function blocks_DB($courseid){
             WHERE parentcontextid = $coursecontextid
             GROUP BY blockname";
     $blocks = $DB -> get_records_sql($sql);
-    return "";
+    return $blocks;
 }
 
 /**
@@ -185,13 +185,12 @@ function get_all_mod_names(){
 function get_tablesql($category, $onlyvisible=false, $nonews=false) {
     $pluginarray = get_all_mod_names();
     if($category === 0){
-        $sql = "SELECT DISTINCT '' AS mccid, '' AS CATEGORY, '' AS mccpath,";
+        $sql = "SELECT mcc.id AS mccid, mcc.name AS CATEGORY, mcc.path AS mccpath,";
     }else{
         $categorypath = get_coursecategorypath($category);
         $sql = "SELECT mcc.id AS mccid, mcc.name AS Category, mcc.path AS mccpath,";
     }
 
-    //so, let's put those bad boys into a proper statement shall we?
     foreach($pluginarray as $plugin){
         if(strpos($plugin, " ")!==false){
             continue;
@@ -205,7 +204,7 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
                     ON cc.id = c.category";
 
         //if a category has been given we need to filter for it
-        if($category !== 0){
+        if($category !== 0 or true){
             $sql .= " WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
                                 OR cc.path LIKE CONCAT( '$categorypath' ))";
         }
@@ -216,16 +215,15 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
         }
 
         // but we still need to select them by a name so...
-        $pluginselas = strtoupper($plugin);
-        $sql .= "   ) AS {$pluginselas},";
+        $sql .= "   ) AS {$plugin},";
     }
     // kill that trailing comma
     $sql = mb_substr($sql, 0, -1);
 
     // now let's add the FROM clauses
 
-    if($category === 0){
-        $sql .= "FROM {course_categories} mcc";
+    if($category == 0){
+        $sql .= " FROM {course_categories} mcc";
     }else{
         $sql .= " FROM {course_categories} mcc
                  WHERE mcc.id = " . $category .
@@ -247,7 +245,6 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
  * @throws dml_exception
  */
 function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false){
-    global $CFG, $DB;
     $sql = "SELECT mc.id, mc.fullname,";
     $pluginarray = get_all_mod_names();
     foreach ($pluginarray as $plugin){
@@ -277,23 +274,7 @@ function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false){
 
     //ok THIS is weird why is the table content handled in locallib but for the other table it's handled in index??
     //TODO fix that mess
-    $returnobject = $DB->get_records_sql($sql, array($courseid));
-    $returnarray = array("<a href=\"$CFG->wwwroot/course/view.php?id=" . $returnobject[$courseid]->id . "\" target=\"_blank\">"
-        . $returnobject[$courseid]->id . "</a>",
-        "<a href=\"$CFG->wwwroot/course/view.php?id="
-        . $returnobject[$courseid]->id . "\" target=\"_blank\">" . $returnobject[$courseid]->fullname . "</a>");
-    $total = 0;
-    $totalnfnd = 0;
-    foreach($pluginarray as $plugin){
-        if($plugin != "resource" and $plugin != "folder"){
-            $totalnfnd += $returnobject[$courseid] -> $plugin;
-        }
-        $total += $returnobject[$courseid] -> $plugin;
-        array_push($returnarray, $returnobject[$courseid] -> $plugin);
-    }
-    array_push($returnarray, $total, $totalnfnd);
-    //array_merge($returnarray, blocks_DB($courseid));
-    return $returnarray;
+    return $sql;
 }
 
 /**
