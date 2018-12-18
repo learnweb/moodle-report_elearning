@@ -87,6 +87,28 @@ class report_elearning_form extends moodleform {
 
 }
 
+
+// get all blocks in that course
+// possible problem the fact that we now load all blocknames/coursenames dynamically adds O(n) complexity where n is
+// the number of courses. That will blow up on deployment
+// TODO fix that.
+function blocks_DB($courseid){
+    global $DB;
+    $coursecontext= context_course::instance($courseid);
+    $coursecontextid = $coursecontext -> id;
+    /*$sql = "SELECT blockinstanceid, contextid, pagetype, visible FROM {block_positions}
+            WHERE contextid = $coursecontextid;";*/
+    // I don't have enough ḱnowledge about contexts yet to evaluate wether I'll need to look for subcontexts inside
+    // of a course
+    // Todo find out
+    $sql = "SELECT DISTINCT blockname, count(blockname) AS count
+            FROM {block_instances}
+            WHERE parentcontextid = $coursecontextid
+            GROUP BY blockname";
+    $blocks = $DB -> get_records_sql($sql);
+    return "";
+}
+
 /**
  * This function limits the length of a string, cutting in the middle
  *
@@ -136,15 +158,15 @@ function get_coursecategorycoursecount($path, $onlyvisible=false) {
     return(count($DB->get_records_sql($sql)));
 }
 
-function get_all_plugin_names(){
+function get_all_mod_names(){
     $pluginman = core_plugin_manager::instance();
-    $pluginarray = $pluginman -> get_plugins_of_type("mod");
-
     $returnarray = array();
-    foreach($pluginarray as $pluigin) {
-        array_push($returnarray, $pluigin->name);
+    foreach (array("mod") as $type) {
+        $pluginarray = $pluginman->get_plugins_of_type($type);
+        foreach ($pluginarray as $pluigin) {
+            array_push($returnarray, $pluigin->name);
+        }
     }
-
 
     return $returnarray;
 }
@@ -161,7 +183,7 @@ function get_all_plugin_names(){
  */
 
 function get_tablesql($category, $onlyvisible=false, $nonews=false) {
-    $pluginarray = get_all_plugin_names();
+    $pluginarray = get_all_mod_names();
     if($category === 0){
         $sql = "SELECT DISTINCT '' AS mccid, '' AS CATEGORY, '' AS mccpath,";
     }else{
@@ -227,7 +249,7 @@ function get_tablesql($category, $onlyvisible=false, $nonews=false) {
 function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false){
     global $CFG, $DB;
     $sql = "SELECT mc.id, mc.fullname,";
-    $pluginarray = get_all_plugin_names();
+    $pluginarray = get_all_mod_names();
     foreach ($pluginarray as $plugin){
         $sql .= "(
                       SELECT COUNT( * )
@@ -270,6 +292,7 @@ function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false){
         array_push($returnarray, $returnobject[$courseid] -> $plugin);
     }
     array_push($returnarray, $total, $totalnfnd);
+    //array_merge($returnarray, blocks_DB($courseid));
     return $returnarray;
 }
 

@@ -15,9 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 
+const types = array("mod", "block");
 function getHeaders($nonrecursive = false, $humanreadable = false){
     $pluginman = core_plugin_manager::instance();
-    $pluginarray = $pluginman -> get_plugins_of_type("mod");
 
     $returnarray = array("ID");
 
@@ -27,13 +27,22 @@ function getHeaders($nonrecursive = false, $humanreadable = false){
         array_push($returnarray, "course");
     }
 
-    foreach($pluginarray as $pluigin) {
-        if(!$humanreadable) {
-            array_push($returnarray, $pluigin->name);
-        }else{
-            array_push($returnarray, get_string("pluginname", $pluigin->name));
+    foreach(types as $type) {
+        $pluginarray = $pluginman->get_plugins_of_type($type);
+        foreach ($pluginarray as $pluigin) {
+            if($type == "mod"){
+                $pluginname = $pluigin -> name;
+            }else{
+                $pluginname = $type . "_" . $pluigin -> name;
+            }
+            if (!$humanreadable) {
+                array_push($returnarray, $pluginname);
+            } else {
+                array_push($returnarray, get_string("pluginname", $pluginname) . " ($type)");
+            }
         }
     }
+
     array_push($returnarray, "Sum");
     array_push($returnarray,"Sum without files and folders");
 
