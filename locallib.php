@@ -450,3 +450,53 @@ function getHeaders($nonrecursive = false, $humanreadable = false){
 
     return $returnarray;
 }
+
+function get_array_for_categories($max_depth, $columns){
+    global $DB;
+
+    // performing double shift so ID and course don't count.
+    array_shift($columns);
+    array_shift($columns);
+    // same goes for the end with those "sums" trailing there
+    array_pop($columns);
+    array_pop($columns);
+
+    $categorys = $DB -> get_records_sql("
+    SELECT id, name, path, depth FROM {course_categories};");
+    $a = new stdClass();
+    foreach ($columns as $column){
+        $a -> $column = "0";
+    }
+
+    foreach($categorys as $category){
+        $category -> subcats = "";
+        if($category -> depth > $max_depth){
+            $parentpos = explode("/", $category -> path);
+            $parent = $parentpos[$max_depth];
+
+            $categorys[$parent] -> subcats .= $category->id . ";";
+            unset($categorys[$category->id]);
+        }
+    }
+
+    foreach($categorys as $category){
+        $category -> mccid = $category -> id;
+        $category -> mccpath = $category -> path;
+        unset($category -> depth);
+        $category = array_merge((array) $category, (array) $a);
+        $categorys[$category["id"]] = (object) $category;
+    }
+
+    return $categorys;
+}
+
+function merge_block_and_mod($mod, $blocks, $courseid){
+    $mod = $mod[$courseid];
+
+    foreach ($blocks as $block){
+        $blockname = "block_" . $block->blockname;
+        $mod -> $blockname = $block->count;
+    }
+
+    return $mod;
+}
