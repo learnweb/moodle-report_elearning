@@ -179,8 +179,7 @@ function get_all_mod_names(){
  * @param boolean $nonews Whether news should be excluded from count.
  * @uses array $CFG: system configuration
  * @uses array $DB: database object
- * @return array $returnarray The report table array.
- * @throws dml_exception
+ * @return string sql query
  */
 function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false){
     $sql = "SELECT mc.id, mc.fullname,";
@@ -209,9 +208,6 @@ function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false){
     $sql .= " FROM {course} mc
               WHERE mc.id = ?
               ORDER BY mc.sortorder";
-
-    //ok THIS is weird why is the table content handled in locallib but for the other table it's handled in index??
-    //TODO fix that mess
     return $sql;
 }
 
@@ -266,4 +262,191 @@ function get_coursecategorypath($id) {
         $categorypath = $DB->get_field('course_categories', 'path', array('id' => $id));
         return $categorypath;
     }
+}
+function get_data($elearningvisibility, $nonews, $a){
+    global $DB, $CFG;
+    $data1 = array();
+    $data2 = array();
+    // Added up courses in this category, recursive.
+    $totalheaderrow = new html_table_row();
+    $totalheadercell = new html_table_cell(get_string('categorytotal', 'report_elearning'));
+    $totalheadercell->header = true;
+    $totalheadertitles = getHeaders();
+    $totalheadercell->colspan = count($totalheadertitles);
+    $totalheadercell->attributes['class'] = 'c0';
+    $totalheaderrow->cells = array($totalheadercell);
+    $data1[] = $totalheaderrow;
+
+    $headerrow = new html_table_row();
+    $totalheadercells = array();
+    //first table
+    $totalheadertitlesNice = getHeaders(false,true);
+    foreach ($totalheadertitlesNice as $totalheadertitle) {
+        $cell = new html_table_cell($totalheadertitle);
+        $cell->header = true;
+        $totalheadercells[] = $cell;
+    }
+    $headerrow->cells = $totalheadercells;
+    $data1[] = $headerrow;
+    $rec = get_array_for_categories(1, $totalheadertitles);
+
+    // Single courses in this category, non-recursive.
+    // ok so this seems a little bit like unnecessary work, it might be better to just include this as an option
+    // however from my understanding the guy I cloned this project from is a major contributer and I just started
+    // so I'll just assume that he's right, I'm wrong and this is in fact useful.
+    $detailheaderrow = new html_table_row();
+    $detailheadercell = new html_table_cell(get_string('justcategory', 'report_elearning'));
+    $detailheadercell->header = true;
+    $headertitles = getHeaders(true, true);
+    $detailheadercell->colspan = count($headertitles);
+    $detailheaderrow->cells = array($detailheadercell);
+    $data2[] = $detailheaderrow;
+    $courseheaderrow = new html_table_row();
+    $headercells = array();
+    // second table
+    foreach ($headertitles as $headertitle) {
+        $cell = new html_table_cell($headertitle);
+        $cell->header = true;
+        $headercells[] = $cell;
+    }
+    $courseheaderrow->cells = $headercells;
+    $data2[] = $courseheaderrow;
+
+    if ($a->category == 0) {
+        // All courses.
+        if ($elearningvisibility == true) {
+            $coursesincategorysql = "SELECT id, category"
+                . "                FROM {course}"
+                . "               WHERE visible <> 0"
+                . "                 AND id > 1"
+                . "            ORDER BY sortorder";
+        } else {
+            $coursesincategorysql = "SELECT id, category"
+                . "                FROM {course}"
+                . "               WHERE id > 1"
+                . "            ORDER BY sortorder";
+        }
+        $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
+    } else {
+        if ($elearningvisibility == true) {
+            $coursesincategorysql = "SELECT id, category"
+                . "                FROM {course}"
+                . "               WHERE category = ?"
+                . "                 AND visible <> 0"
+                . "            ORDER BY sortorder";
+        } else {
+            $coursesincategorysql = "SELECT id, category"
+                . "                FROM {course}"
+                . "               WHERE category = ?"
+                . "            ORDER BY sortorder";
+        }
+        $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
+    }
+    foreach ($coursesincategory as $courserec) {
+        $courseid = $courserec -> id;
+        $coursecat = $courserec -> category;
+        $headerarray = getHeaders(true,false);
+        // performing double shift so ID and course don't count.
+        array_shift($headerarray);
+        array_shift($headerarray);
+        // same goes for the end with those "sums" trailing there
+        array_pop($headerarray);
+        array_pop($headerarray);
+        $returnobject = $DB->get_records_sql(get_coursetablecontent($courseid, $elearningvisibility, $nonews), array($courseid));
+        $tablecontent = merge_block_and_mod($returnobject, blocks_DB($courseid), $courseid);
+        $returnarray = array("<a href=\"$CFG->wwwroot/course/view.php?id=" . $tablecontent->id . "\" target=\"_blank\">"
+            . $tablecontent->id . "</a>",
+            "<a href=\"$CFG->wwwroot/course/view.php?id="
+            . $tablecontent->id . "\" target=\"_blank\">" . $tablecontent->fullname . "</a>");
+        $total = 0;
+        $totalnfnd = 0;
+        foreach($headerarray as $plugin) {
+            if (property_exists($tablecontent, $plugin)) {
+                if ($plugin != "resource" and $plugin != "folder") {
+                    $totalnfnd += $tablecontent->$plugin;
+                }
+                $total += $tablecontent->$plugin;
+                array_push($returnarray, $tablecontent->$plugin);
+                if(array_key_exists($coursecat, $rec)){
+                    //hooray that's the easy way
+                    $rec[$coursecat] -> $plugin += $tablecontent->$plugin;
+                }else{
+                    //hrmpf
+                    foreach($rec as $cat){
+                        if(strpos($cat->subcats, $coursecat) !== false){
+                            $cat -> $plugin += $tablecontent->$plugin;
+                            break;
+                        }
+                    }
+                }
+            }else{
+                array_push($returnarray, 0);
+            }
+        }
+        array_push($returnarray, $total, $totalnfnd);
+
+        $data2[] = $returnarray;
+    }
+
+    foreach ($rec as $records) {
+        $tablearray = array();
+        $total = 0;
+        $totalnfnd = 0;
+        foreach ($totalheadertitles as $category){
+            if($category == "ID") {
+                array_push($tablearray, "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $records->mccid .
+                    "\" target=\"_blank\">" . $records->mccid . "</a>");
+            }else if($category == "category"){
+                array_push($tablearray,  "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $records -> mccid .
+                    "\" target=\"_blank\">" . get_stringpath($records->mccpath) . "</a><!--(" . $records->mccpath . ")-->" );
+            }else if($category == "Sum") {
+                array_push($tablearray, $total);
+            }else if($category == "Sum without files and folders"){
+                array_push($tablearray, $totalnfnd);
+            }else{
+                $total += $records -> $category;
+                if($category != "folder" and $category != "resource"){
+                    $totalnfnd += $records -> $category;
+                }
+                array_push($tablearray, $records -> $category);
+            }
+        }
+        $data1[] = $tablearray;
+    }
+    return array($data1, $data2);
+}
+
+const types = array("mod", "block");
+function getHeaders($nonrecursive = false, $humanreadable = false){
+    $pluginman = core_plugin_manager::instance();
+
+    $returnarray = array("ID");
+
+    if(!$nonrecursive){
+        array_push($returnarray, "category");
+    }else{
+        array_push($returnarray, "course");
+    }
+
+    foreach(types as $type) {
+        $pluginarray = $pluginman->get_plugins_of_type($type);
+        foreach ($pluginarray as $pluigin) {
+            if($type == "mod"){
+                $pluginname = $pluigin -> name;
+            }else{
+                $pluginname = $type . "_" . $pluigin -> name;
+            }
+            if (!$humanreadable) {
+                array_push($returnarray, $pluginname);
+            } else {
+                array_push($returnarray, get_string("pluginname", $pluginname) . " ($type)");
+            }
+        }
+    }
+
+    array_push($returnarray, "Sum");
+    array_push($returnarray,"Sum without files and folders");
+
+
+    return $returnarray;
 }
