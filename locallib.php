@@ -90,17 +90,20 @@ class report_elearning_form extends moodleform {
 
 // get all blocks in that course
 // possible problem the fact that we now load all blocknames/coursenames dynamically adds O(n) complexity where n is
-// the number of courses. That will blow up on deployment
+// the number of courses. That might blow up on deployment
 // TODO fix that.
+// tried to fix... while you can perfectly make the needed sql statement on pysql and all logic says this has to be possible
+// moodle will overwrite your results for a course with the las it finds, leading to you discovering exactly one
+// blocktype per course id...
+/**Gets all blocks in a given course
+ * @param $courseid the id of the course
+ * @return array count of blocktype in that course
+ * @throws dml_exception
+ */
 function blocks_DB($courseid){
     global $DB;
     $coursecontext= context_course::instance($courseid);
     $coursecontextid = $coursecontext -> id;
-    /*$sql = "SELECT blockinstanceid, contextid, pagetype, visible FROM {block_positions}
-            WHERE contextid = $coursecontextid;";*/
-    // I don't have enough ḱnowledge about contexts yet to evaluate wether I'll need to look for subcontexts inside
-    // of a course
-    // Todo find out
     $sql = "SELECT DISTINCT blockname, count(blockname) AS count
             FROM {block_instances}
             WHERE parentcontextid = $coursecontextid
@@ -263,6 +266,15 @@ function get_coursecategorypath($id) {
         return $categorypath;
     }
 }
+
+/**
+ * @param $elearningvisibility wether to count invisible mods or not
+ * @param $nonews shall news forum be counted?
+ * @param $a a std class that mainly provides the category id in case of a selection
+ * @return array Data to display, ready to be used by a html table
+ * @throws coding_exception
+ * @throws dml_exception
+ */
 function get_data($elearningvisibility, $nonews, $a){
     global $DB, $CFG;
     $data1 = array();
@@ -371,7 +383,8 @@ function get_data($elearningvisibility, $nonews, $a){
                     //hooray that's the easy way
                     $rec[$coursecat] -> $plugin += $tablecontent->$plugin;
                 }else{
-                    //hrmpf
+                    // hrmpf now we'll need to check who the parent is. btw this could be way more efficient
+                    // computationwise tradeoff would be less memory efficiency
                     foreach($rec as $cat){
                         if(strpos($cat->subcats, $coursecat) !== false){
                             $cat -> $plugin += $tablecontent->$plugin;
@@ -471,6 +484,7 @@ function get_array_for_categories($max_depth, $columns){
     foreach($categorys as $category){
         $category -> subcats = "";
         if($category -> depth > $max_depth){
+            //add the subcat to the parentcat
             $parentpos = explode("/", $category -> path);
             $parent = $parentpos[$max_depth];
 
@@ -480,6 +494,7 @@ function get_array_for_categories($max_depth, $columns){
     }
 
     foreach($categorys as $category){
+        //intialize categories with a 0 on every count
         $category -> mccid = $category -> id;
         $category -> mccpath = $category -> path;
         unset($category -> depth);
@@ -490,6 +505,9 @@ function get_array_for_categories($max_depth, $columns){
     return $categorys;
 }
 
+//internal function therefore not documented
+//I highly discourage usage outside of this project
+//merges the block and mod list of a course
 function merge_block_and_mod($mod, $blocks, $courseid){
     $mod = $mod[$courseid];
 
