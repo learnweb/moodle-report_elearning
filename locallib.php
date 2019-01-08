@@ -93,7 +93,7 @@ class report_elearning_form extends moodleform {
 // the number of courses. That might blow up on deployment
 // TODO fix that.
 // tried to fix... while you can perfectly make the needed sql statement on pysql and all logic says this has to be possible
-// moodle will overwrite your results for a course with the las it finds, leading to you discovering exactly one
+// moodle will overwrite your results for a course with the last it finds, leading to you discovering exactly one
 // blocktype per course id...
 /**Gets all blocks in a given course
  * @param $courseid the id of the course
@@ -177,14 +177,13 @@ function get_all_mod_names(){
 /**
  * Returns the array of an e-learning report table course row.
  *
- * @param int $courseid The course id.
  * @param boolean $onlyvisible Whether only visible courses should count.
  * @param boolean $nonews Whether news should be excluded from count.
+ * @return string sql query
  * @uses array $CFG: system configuration
  * @uses array $DB: database object
- * @return string sql query
  */
-function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false){
+function get_coursetablecontent($onlyvisible=false, $nonews=false){
     $sql = "SELECT mc.id, mc.fullname,";
     $pluginarray = get_all_mod_names();
     foreach ($pluginarray as $plugin){
@@ -300,7 +299,7 @@ function get_data($elearningvisibility, $nonews, $a){
     }
     $headerrow->cells = $totalheadercells;
     $data1[] = $headerrow;
-    $rec = get_array_for_categories(1, $totalheadertitles);
+    $rec = get_array_for_categories(-1, $totalheadertitles);
 
     // Single courses in this category, non-recursive.
     // ok so this seems a little bit like unnecessary work, it might be better to just include this as an option
@@ -364,7 +363,7 @@ function get_data($elearningvisibility, $nonews, $a){
         // same goes for the end with those "sums" trailing there
         array_pop($headerarray);
         array_pop($headerarray);
-        $returnobject = $DB->get_records_sql(get_coursetablecontent($courseid, $elearningvisibility, $nonews), array($courseid));
+        $returnobject = $DB->get_records_sql(get_coursetablecontent($elearningvisibility, $nonews), array($courseid));
         $tablecontent = merge_block_and_mod($returnobject, blocks_DB($courseid), $courseid);
         $returnarray = array("<a href=\"$CFG->wwwroot/course/view.php?id=" . $tablecontent->id . "\" target=\"_blank\">"
             . $tablecontent->id . "</a>",
@@ -385,6 +384,7 @@ function get_data($elearningvisibility, $nonews, $a){
                 }else{
                     // hrmpf now we'll need to check who the parent is. btw this could be way more efficient
                     // computationwise tradeoff would be less memory efficiency
+                    // but computational speed would remove the loop... inside a loop so...
                     foreach($rec as $cat){
                         if(strpos($cat->subcats, $coursecat) !== false){
                             $cat -> $plugin += $tablecontent->$plugin;
@@ -402,6 +402,12 @@ function get_data($elearningvisibility, $nonews, $a){
     }
 
     foreach ($rec as $records) {
+        // if there is a category provided we want to skip all the other categorys.
+        if($a -> category != 0){
+            if($a -> category != $records -> id){
+                continue;
+            }
+        }
         $tablearray = array();
         $total = 0;
         $totalnfnd = 0;
@@ -426,6 +432,8 @@ function get_data($elearningvisibility, $nonews, $a){
         }
         $data1[] = $tablearray;
     }
+
+
     return array($data1, $data2);
 }
 
@@ -483,7 +491,8 @@ function get_array_for_categories($max_depth, $columns){
 
     foreach($categorys as $category){
         $category -> subcats = "";
-        if($category -> depth > $max_depth){
+        //ne
+        if($category -> depth > $max_depth and $max_depth>0){
             //add the subcat to the parentcat
             $parentpos = explode("/", $category -> path);
             $parent = $parentpos[$max_depth];
@@ -497,11 +506,16 @@ function get_array_for_categories($max_depth, $columns){
         //intialize categories with a 0 on every count
         $category -> mccid = $category -> id;
         $category -> mccpath = $category -> path;
+        $path = explode("/", $category -> path);
+        array_shift($path);
+        $category -> readablepath = "";
+        foreach ($path as $instance){
+            $category -> readablepath .= "/" . $categorys[$instance] -> name;
+        }
         unset($category -> depth);
         $category = array_merge((array) $category, (array) $a);
         $categorys[$category["id"]] = (object) $category;
     }
-
     return $categorys;
 }
 
