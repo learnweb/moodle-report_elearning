@@ -23,7 +23,7 @@
 require_once($CFG->libdir . "/externallib.php");
 require_once($CFG->dirroot . '/report/elearning/locallib.php');
 
-class local_elearning_external extends external_api {
+class report_elearning_external extends external_api {
 
     public static function prometheus_endpoint_parameters(){
         return new external_function_parameters(

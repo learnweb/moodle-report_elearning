@@ -23,10 +23,10 @@
 
 // We defined the web service functions to install.
 $functions = array(
-        'local_elearning_prometheus_endpoint_prometheus_endpoint' => array(
-            'classname'   => 'local_elearning_external',
+        'report_elearning_prometheus_endpoint' => array(
+            'classname'   => 'report_elearning_external',
             'methodname'  => 'prometheus_endpoint',
-            'classpath'   => 'local/elearning_prometheus_endpoint/externallib.php',
+            'classpath'   => 'report/elearning/externallib.php',
             'description' => 'Returns the prometheus scrapable version of the e-learning report',
             'type'        => 'read',
             )
@@ -35,7 +35,7 @@ $functions = array(
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
 $services = array(
         'My service' => array(
-                'functions' => array ('local_elearning_prometheus_endpoint_prometheus_endpoint'),
+                'functions' => array ('report_elearning_prometheus_endpoint'),
                 'restrictedusers' => 0,
                 'enabled'=>1,
         )
