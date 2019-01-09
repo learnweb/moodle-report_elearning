@@ -22,11 +22,11 @@
 // 5- Run this script directly from your browser: you should see 'Hello, FIRSTNAME'
 
 /// SETUP - NEED TO BE CHANGED
-$token = 'd9963b80c4ec050eed0576f48c5405a9';
+$token = 'b04208c2eeb176012282999b87c1e0c4';
 $domainname = 'http://172.17.0.1/moodle';
 
 /// FUNCTION NAME
-$functionname = 'local_elearning_prometheus_endpoint_prometheus_endpoint';
+$functionname = 'report_elearning_prometheus_endpoint';
 
 /// PARAMETER TWEAKS
 // set to a categoryid other than 0 to just fetch that category

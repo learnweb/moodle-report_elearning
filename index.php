@@ -172,16 +172,16 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             $rowdata = array();
             $total = 0; $totalcleared = 0;
             foreach ($totalheadertitles as $index => $name){
-                if($name == "ID"){
+                if($name == "id"){
                     $rowdata[$index] =  "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->mccid .
                         "\" target=\"_blank\">" . $row->mccid . "</a>";
                 }elseif ($name == "category"){
                     $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row -> mccid .
                         "\" target=\"_blank\">" . get_stringpath($row->mccpath) . "</a><!--(" . $row->mccpath . ")-->";
                 }elseif ($name == "Sum"){
-
+                    $rowdata[$index] = $total;
                 }elseif ($name == "Sum without files and folders"){
-
+                    $rowdata[$index] = $totalcleared;
                 }else {
                     if (isset($row->$name)) {
                         if (!($name == "folder" || $name == "resource")) {
@@ -194,8 +194,6 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
                     }
                 }
             }
-            array_push($rowdata, $total);
-            array_push($rowdata, $totalcleared);
             $data1[] = $rowdata;
         }
 

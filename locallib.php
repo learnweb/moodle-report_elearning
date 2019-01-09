@@ -344,7 +344,11 @@ const types = array("mod", "block");
 function getHeaders($nonrecursive = false, $humanreadable = false){
     $pluginman = core_plugin_manager::instance();
 
-    $returnarray = array("ID");
+    if($humanreadable){
+        $returnarray = array("ID");
+    }else {
+        $returnarray = array("id");
+    }
 
     if(!$nonrecursive){
         array_push($returnarray, "category");

@@ -64,8 +64,10 @@ class report_elearning_external extends external_api {
         //prometheus data endpoint format
         //format for summary: categorys_total{category="<category>"} <value>
         //format for single datapoint: course_<course>{plugin="<block/mod>"} value
-        $plugins = getheaders();
+        $plugins = getHeaders();
         //don't need ID and cat/course
+        array_shift($plugins);
+        array_shift($plugins);
 
         $return = "";
         $summary = "";
@@ -75,21 +77,23 @@ class report_elearning_external extends external_api {
         foreach($b as $cat){
             $name = str_replace(" ", "_" , $cat -> name);
             $tot = 0;
-            for($j=0; $j < sizeof($plugins); $j++){
-                if(isset($cat -> $plugins[$j])) {
-                    $num = $cat -> $plugins[$j];
+            foreach($plugins as $plugin){
+                if(isset($cat->$plugin)) {
+                    $num = $cat -> $plugin;
                     $tot += $num;
                 }else {
                     $num = 0;
                 }
-                if(strpos($plugins[$j],"block_") != 0){
-                    $pluginname = $plugins[$j];
+                if(strpos($plugin,"block_") !== false){
+                    $pluginname = $plugin;
                 }else{
-                    $pluginname = "mod_" . $plugins[$j];
+                    $pluginname = "mod_" . $plugin;
                 }
-                $return .= "category_" . $name . "{plugin=\"{$pluginname}\"} {$num}" . "\n";
+                $return .= "category_" . $cat -> id . "{name=\"{$name}\" path=\"{$cat->path}\" ".
+               "explicitpath=\"{$cat->readablepath}\" plugin=\"{$pluginname}\"} {$num}" . "\n";
             }
-            $summary .= "Category_Overview{category=\"{$name}\"} ". $tot ."\n";
+            $summary .= "Category_Overview{id=\"{$cat->id}\" name=\"{$name}\" path=\"{$cat->path}\" ".
+                " explicitpath=\"{$cat->readablepath}\"} ". $tot ."\n";
         }
 
         return $return . $summary;
