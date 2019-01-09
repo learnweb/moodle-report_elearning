@@ -110,10 +110,96 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $resultstring .= "<br />&#160;<br />\n";
         // Write a table with 24 columns.
         $table = new html_table();
-
         $fulldata = get_data($elearningvisibility, $nonews, $a);
+        //begin insert
 
-        $table -> data = array_merge($fulldata[0], $fulldata[1]);
+        $data1 = array();
+        // Added up courses in this category, recursive.
+        $totalheaderrow = new html_table_row();
+        $totalheadercell = new html_table_cell(get_string('categorytotal', 'report_elearning'));
+        $totalheadercell->header = true;
+        $totalheadertitles = getHeaders();
+        $totalheadercell->colspan = count($totalheadertitles);
+        $totalheadercell->attributes['class'] = 'c0';
+        $totalheaderrow->cells = array($totalheadercell);
+        $data1[] = $totalheaderrow;
+
+        $headerrow = new html_table_row();
+        $totalheadercells = array();
+        //first table
+        $totalheadertitlesNice = getHeaders(false,true);
+        foreach ($totalheadertitlesNice as $totalheadertitle) {
+            $cell = new html_table_cell($totalheadertitle);
+            $cell->header = true;
+            $totalheadercells[] = $cell;
+        }
+        $headerrow->cells = $totalheadercells;
+        $data1[] = $headerrow;
+
+        if ($a->category == 0) {
+            // All courses.
+            if ($elearningvisibility == true) {
+                $coursesincategorysql = "SELECT id, category"
+                    . "                FROM {course}"
+                    . "               WHERE visible <> 0"
+                    . "                 AND id > 1"
+                    . "            ORDER BY sortorder";
+            } else {
+                $coursesincategorysql = "SELECT id, category"
+                    . "                FROM {course}"
+                    . "               WHERE id > 1"
+                    . "            ORDER BY sortorder";
+            }
+            $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
+        } else {
+            if ($elearningvisibility == true) {
+                $coursesincategorysql = "SELECT id, category"
+                    . "                FROM {course}"
+                    . "               WHERE category = ?"
+                    . "                 AND visible <> 0"
+                    . "            ORDER BY sortorder";
+            } else {
+                $coursesincategorysql = "SELECT id, category"
+                    . "                FROM {course}"
+                    . "               WHERE category = ?"
+                    . "            ORDER BY sortorder";
+            }
+            $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
+        }
+        //end
+
+        foreach ($fulldata as $row){
+            $rowdata = array();
+            $total = 0; $totalcleared = 0;
+            foreach ($totalheadertitles as $index => $name){
+                if($name == "ID"){
+                    $rowdata[$index] =  "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->mccid .
+                        "\" target=\"_blank\">" . $row->mccid . "</a>";
+                }elseif ($name == "category"){
+                    $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row -> mccid .
+                        "\" target=\"_blank\">" . get_stringpath($row->mccpath) . "</a><!--(" . $row->mccpath . ")-->";
+                }elseif ($name == "Sum"){
+
+                }elseif ($name == "Sum without files and folders"){
+
+                }else {
+                    if (isset($row->$name)) {
+                        if (!($name == "folder" || $name == "resource")) {
+                            $totalcleared += $row->$name;
+                        }
+                        $total += $row->$name;
+                        $rowdata[$index] = $row->$name;
+                    }else{
+                        $rowdata[$index] = 0;
+                    }
+                }
+            }
+            array_push($rowdata, $total);
+            array_push($rowdata, $totalcleared);
+            $data1[] = $rowdata;
+        }
+
+        $table -> data = $data1;
 
         if ($download == true) {
             $filename = "Export-E-Learning-" . date("Y-m-d-H-i-s") . ".xls";

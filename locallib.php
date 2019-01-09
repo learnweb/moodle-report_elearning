@@ -266,175 +266,43 @@ function get_coursecategorypath($id) {
     }
 }
 
+function get_all_courses($cats){
+    foreach ($cats as $cat){
+        $cat -> childs = array();
+    }
+    global $DB;
+
+    $c = $DB -> get_records_sql("SELECT id, category FROM {course} WHERE NOT category = 0");
+    foreach($c as $course){
+        array_push($cats[$course->category]->childs, $course->id);
+    }
+
+    return $cats;
+
+}
+
 /**
- * @param $elearningvisibility wether to count invisible mods or not
- * @param $nonews shall news forum be counted?
- * @param $a a std class that mainly provides the category id in case of a selection
+ * @param $elearningvisibility bool wether to count invisible mods or not
+ * @param $nonews bool shall news forum be counted?
+ * @param $a stdClass std class that mainly provides the category id in case of a selection
  * @return array Data to display, ready to be used by a html table
  * @throws coding_exception
  * @throws dml_exception
  */
 function get_data($elearningvisibility, $nonews, $a){
-    global $DB, $CFG;
-    $data1 = array();
-    $data2 = array();
-    // Added up courses in this category, recursive.
-    $totalheaderrow = new html_table_row();
-    $totalheadercell = new html_table_cell(get_string('categorytotal', 'report_elearning'));
-    $totalheadercell->header = true;
-    $totalheadertitles = getHeaders();
-    $totalheadercell->colspan = count($totalheadertitles);
-    $totalheadercell->attributes['class'] = 'c0';
-    $totalheaderrow->cells = array($totalheadercell);
-    $data1[] = $totalheaderrow;
-
-    $headerrow = new html_table_row();
-    $totalheadercells = array();
-    //first table
-    $totalheadertitlesNice = getHeaders(false,true);
-    foreach ($totalheadertitlesNice as $totalheadertitle) {
-        $cell = new html_table_cell($totalheadertitle);
-        $cell->header = true;
-        $totalheadercells[] = $cell;
+    global $DB;
+    // we want to get all categories so set max depth to smth negative
+    $rec = get_array_for_categories(-1, array());
+    $rec = get_all_courses($rec);
+    foreach ($rec as $key => $category) {
+        $catid = $category->id;
+        $returnobject = $DB->get_records_sql(get_tablesql($catid, $elearningvisibility, $nonews));
+        $block_data = blocks_DB($category->childs);
+        $tablecontent = merge_block_and_mod($returnobject, $block_data, $catid);
+        $category = (object)array_merge((array)$category, (array)$tablecontent); //black magic novice
+        $rec[$key] = $category;
     }
-    $headerrow->cells = $totalheadercells;
-    $data1[] = $headerrow;
-    $rec = get_array_for_categories(-1, $totalheadertitles);
-
-    // Single courses in this category, non-recursive.
-    // ok so this seems a little bit like unnecessary work, it might be better to just include this as an option
-    // however from my understanding the guy I cloned this project from is a major contributer and I just started
-    // so I'll just assume that he's right, I'm wrong and this is in fact useful.
-    $detailheaderrow = new html_table_row();
-    $detailheadercell = new html_table_cell(get_string('justcategory', 'report_elearning'));
-    $detailheadercell->header = true;
-    $headertitles = getHeaders(true, true);
-    $detailheadercell->colspan = count($headertitles);
-    $detailheaderrow->cells = array($detailheadercell);
-    $data2[] = $detailheaderrow;
-    $courseheaderrow = new html_table_row();
-    $headercells = array();
-    // second table
-    foreach ($headertitles as $headertitle) {
-        $cell = new html_table_cell($headertitle);
-        $cell->header = true;
-        $headercells[] = $cell;
-    }
-    $courseheaderrow->cells = $headercells;
-    $data2[] = $courseheaderrow;
-
-    if ($a->category == 0) {
-        // All courses.
-        if ($elearningvisibility == true) {
-            $coursesincategorysql = "SELECT id, category"
-                . "                FROM {course}"
-                . "               WHERE visible <> 0"
-                . "                 AND id > 1"
-                . "            ORDER BY sortorder";
-        } else {
-            $coursesincategorysql = "SELECT id, category"
-                . "                FROM {course}"
-                . "               WHERE id > 1"
-                . "            ORDER BY sortorder";
-        }
-        $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
-    } else {
-        if ($elearningvisibility == true) {
-            $coursesincategorysql = "SELECT id, category"
-                . "                FROM {course}"
-                . "               WHERE category = ?"
-                . "                 AND visible <> 0"
-                . "            ORDER BY sortorder";
-        } else {
-            $coursesincategorysql = "SELECT id, category"
-                . "                FROM {course}"
-                . "               WHERE category = ?"
-                . "            ORDER BY sortorder";
-        }
-        $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
-    }
-    foreach ($coursesincategory as $courserec) {
-        $courseid = $courserec -> id;
-        $coursecat = $courserec -> category;
-        $headerarray = getHeaders(true,false);
-        // performing double shift so ID and course don't count.
-        array_shift($headerarray);
-        array_shift($headerarray);
-        // same goes for the end with those "sums" trailing there
-        array_pop($headerarray);
-        array_pop($headerarray);
-        $returnobject = $DB->get_records_sql(get_coursetablecontent($elearningvisibility, $nonews), array($courseid));
-        $tablecontent = merge_block_and_mod($returnobject, blocks_DB($courseid), $courseid);
-        $returnarray = array("<a href=\"$CFG->wwwroot/course/view.php?id=" . $tablecontent->id . "\" target=\"_blank\">"
-            . $tablecontent->id . "</a>",
-            "<a href=\"$CFG->wwwroot/course/view.php?id="
-            . $tablecontent->id . "\" target=\"_blank\">" . $tablecontent->fullname . "</a>");
-        $total = 0;
-        $totalnfnd = 0;
-        foreach($headerarray as $plugin) {
-            if (property_exists($tablecontent, $plugin)) {
-                if ($plugin != "resource" and $plugin != "folder") {
-                    $totalnfnd += $tablecontent->$plugin;
-                }
-                $total += $tablecontent->$plugin;
-                array_push($returnarray, $tablecontent->$plugin);
-                if(array_key_exists($coursecat, $rec)){
-                    //hooray that's the easy way
-                    $rec[$coursecat] -> $plugin += $tablecontent->$plugin;
-                }else{
-                    // hrmpf now we'll need to check who the parent is. btw this could be way more efficient
-                    // computationwise tradeoff would be less memory efficiency
-                    // but computational speed would remove the loop... inside a loop so...
-                    foreach($rec as $cat){
-                        if(strpos($cat->subcats, $coursecat) !== false){
-                            $cat -> $plugin += $tablecontent->$plugin;
-                            break;
-                        }
-                    }
-                }
-            }else{
-                array_push($returnarray, 0);
-            }
-        }
-        array_push($returnarray, $total, $totalnfnd);
-
-        $data2[] = $returnarray;
-    }
-
-    foreach ($rec as $records) {
-        // if there is a category provided we want to skip all the other categorys.
-        if($a -> category != 0){
-            if($a -> category != $records -> id){
-                continue;
-            }
-        }
-        $tablearray = array();
-        $total = 0;
-        $totalnfnd = 0;
-        foreach ($totalheadertitles as $category){
-            if($category == "ID") {
-                array_push($tablearray, "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $records->mccid .
-                    "\" target=\"_blank\">" . $records->mccid . "</a>");
-            }else if($category == "category"){
-                array_push($tablearray,  "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $records -> mccid .
-                    "\" target=\"_blank\">" . get_stringpath($records->mccpath) . "</a><!--(" . $records->mccpath . ")-->" );
-            }else if($category == "Sum") {
-                array_push($tablearray, $total);
-            }else if($category == "Sum without files and folders"){
-                array_push($tablearray, $totalnfnd);
-            }else{
-                $total += $records -> $category;
-                if($category != "folder" and $category != "resource"){
-                    $totalnfnd += $records -> $category;
-                }
-                array_push($tablearray, $records -> $category);
-            }
-        }
-        $data1[] = $tablearray;
-    }
-
-
-    return array($data1, $data2);
+    return $rec;
 }
 
 const types = array("mod", "block");
@@ -513,7 +381,7 @@ function get_array_for_categories($max_depth, $columns){
             $category -> readablepath .= "/" . $categorys[$instance] -> name;
         }
         unset($category -> depth);
-        $category = array_merge((array) $category, (array) $a);
+        $category = array_merge((array)$category, (array)$a);
         $categorys[$category["id"]] = (object) $category;
     }
     return $categorys;
