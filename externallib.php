@@ -54,7 +54,7 @@ class report_elearning_external extends external_api {
         }
 
         $config = new stdClass();
-        // pass the categoryid to restrict results
+        // pass the categoryid to restrict results, nope doesn't do anything anymore :D
         $config -> category = $categoryid;
         $config -> context = null;
 
@@ -62,62 +62,34 @@ class report_elearning_external extends external_api {
         $b = get_data($visibility, $nonews, $config);
 
         //prometheus data endpoint format
-
-        //split data in courses and categories
         //format for summary: categorys_total{category="<category>"} <value>
         //format for single datapoint: course_<course>{plugin="<block/mod>"} value
-
-        //the returned data has 4 headerrows split in two tables therefore we remove 2 rows from both tables
-        array_shift($b[0]);
-        array_shift($b[0]);
-        array_shift($b[1]);
-        array_shift($b[1]);
-        $categorys = $b[0];
-        $courses = $b[1];
         $plugins = getheaders();
         //don't need ID and cat/course
-        array_shift($plugins);
-        array_shift($plugins);
 
         $return = "";
         $summary = "";
 
-        //Categorys first
         //O(n * d) !! d= 72 atm so technically O(n) just watch out cause d is the number of blocks and mods
-        for($i = 0; $i < sizeof($categorys); $i++){
-            $category = $categorys[$i];
-            $name = explode(">", $category[1])[1];
-            $name = explode("<", $name)[0];
-            //no need for id or name anymore
-            array_shift($category);
-            array_shift($category);
-            // multibyte broke for some reason
-            $name = str_replace(" ", "_" , $name);
-
+        //however since this is the purpose of the project...
+        foreach($b as $cat){
+            $name = str_replace(" ", "_" , $cat -> name);
+            $tot = 0;
             for($j=0; $j < sizeof($plugins); $j++){
-                $return .= "category_" . $name . "{plugin=\"{$plugins[$j]}\"} {$category[$j]}" . "\n";
+                if(isset($cat -> $plugins[$j])) {
+                    $num = $cat -> $plugins[$j];
+                    $tot += $num;
+                }else {
+                    $num = 0;
+                }
+                if(strpos($plugins[$j],"block_") != 0){
+                    $pluginname = $plugins[$j];
+                }else{
+                    $pluginname = "mod_" . $plugins[$j];
+                }
+                $return .= "category_" . $name . "{plugin=\"{$pluginname}\"} {$num}" . "\n";
             }
-            $summary .= "Category_Overview{category=\"{$name}\"} ". $category[sizeof($category) - 2] ."\n";
-
-        }
-
-        //now for courses
-        for($i = 0; $i < sizeof($courses); $i++){
-            $course = $courses[$i];
-            $name = explode(">", $course[1])[1];
-            $name = explode("<", $name)[0];
-            //no need for id or name anymore
-            array_shift($course);
-            array_shift($course);
-            // multibyte broke for some reason
-            $name = str_replace(" ", "_" , $name);
-
-            for($j=0; $j < sizeof($plugins); $j++){
-                $return .= "course_" . $name . "{plugin=\"{$plugins[$j]}\"} {$course[$j]}" . "\n";
-            }
-
-            $summary .= "Course_Overview{course=\"{$name}\"} ". $course[sizeof($course) - 2] ."\n";
-
+            $summary .= "Category_Overview{category=\"{$name}\"} ". $tot ."\n";
         }
 
         return $return . $summary;
