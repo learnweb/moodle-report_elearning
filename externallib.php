@@ -33,7 +33,7 @@ class report_elearning_external extends external_api {
         );
     }
 
-    public static function prometheus_endpoint($categoryid, $visibility, $nonews){
+    public static function prometheus_endpoint($categoryid= 0, $visibility = false, $nonews = false){
         global $USER;
         //Parameter validation
         //REQUIRED

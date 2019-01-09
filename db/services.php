@@ -34,7 +34,7 @@ $functions = array(
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
 $services = array(
-        'My service' => array(
+        'elearning_prometheus' => array(
                 'functions' => array ('report_elearning_prometheus_endpoint'),
                 'restrictedusers' => 0,
                 'enabled'=>1,

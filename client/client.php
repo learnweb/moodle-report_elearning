@@ -22,7 +22,7 @@
 // 5- Run this script directly from your browser: you should see 'Hello, FIRSTNAME'
 
 /// SETUP - NEED TO BE CHANGED
-$token = 'b04208c2eeb176012282999b87c1e0c4';
+$token = '914813d872b1628cc00d4400b481d31b';
 $domainname = 'http://172.17.0.1/moodle';
 
 /// FUNCTION NAME
@@ -38,9 +38,10 @@ $nonews = false;
 
 ///// XML-RPC CALL
 header('Content-Type: text/plain');
-$serverurl = $domainname . '/webservice/xmlrpc/server.php'. '?wstoken=' . $token;
+$serverurl = $domainname . '/webservice/rest/server.php'. '?wstoken=' . $token . '&wsfunction='.$functionname;
 require_once('./curl.php');
 $curl = new curl;
-$post = xmlrpc_encode_request($functionname, array($categoryid, $onlyvisible, $nonews));
-$resp = xmlrpc_decode($curl->post($serverurl, $post));
-print_r($resp);
+$restformat = 'json';
+$restformat = ($restformat == 'json')?'&moodlewsrestformat=' . $restformat:'';
+$resp = $curl->post($serverurl.$restformat);
+print_r(json_decode($resp));
