@@ -1,0 +1,8 @@
+language: php
+sudo: false
+
+addons:
+  postgresql: "9.4"
+
+install:
+  - moodle-plugin-ci install
