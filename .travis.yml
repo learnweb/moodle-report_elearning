@@ -1,5 +1,21 @@
 language: php
 sudo: false
 
+notifications:
+  email: false
+
 addons:
   postgresql: "9.4"
+
+php:
+  - 7.0
+  - 7.1
+  - 7.2
+
+before_install:
+  - phpenv config-rm xdebug.ini
+  - nvm install 8.9
+  - cd ../..
+  - composer selfupdate
+  - composer create-project -n --no-dev --prefer-dist blackboard-open-source/moodle-plugin-ci ci ^2
+  - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"
