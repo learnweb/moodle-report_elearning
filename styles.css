@@ -1,26 +1,26 @@
 #page-report-elearning-index .info {
-    margin:10px;
+    margin: 10px;
 }
 
 #teacher_courses_list {
-    border:1px solid #333;
-    border-collapse:collapse;
-    margin:0 auto;
-    width:100%;
+    border: 1px solid #333;
+    border-collapse: collapse;
+    margin: 0 auto;
+    width: 100%;
 }
 
 #teacher_courses_list td {
-    border:1px solid #333;
-    vertical-align:top;
-    padding:5px;
-    width:200px;
-    text-align:left;
+    border: 1px solid #333;
+    vertical-align: top;
+    padding: 5px;
+    width: 200px;
+    text-align: left;
 }
 
 #page-report-elearning-index table th a {
-    font-size:10px;
+    font-size: 10px;
 }
 
 #page-report-elearning-index table th {
-    vertical-align:top;
+    vertical-align: top;
 }
