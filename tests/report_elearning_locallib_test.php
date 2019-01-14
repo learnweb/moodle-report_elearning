@@ -8,16 +8,14 @@
 
 use PHPUnit\Framework\TestCase;
 
-global $CFG;
-require_once(__DIR__ . '../../../../config.php');
-require_once($CFG->dirroot . '/report/elearning/locallib.php'); // Include the code to test
+require_once(__DIR__ . '/../../../config.php');
+//require_once($CFG->dirroot . '/report/elearning/locallib.php'); // Include the code to test
 
 class report_elearning_locallib_test extends TestCase
 {
 
     public function setUp()
     {
-        $this -> resetAfterTest();
         global $DB;
         $sql = "INSERT".
         " (id, blockname, parentcontextid, showinsubcontexts, requiredbytheme, pagetypepattern, defaultregion, defaultweigt, timecreated, timemodified)".
@@ -50,7 +48,8 @@ class report_elearning_locallib_test extends TestCase
 
     public function tearDown()
     {
-
+        global $DB;
+        $DB->execute("DELETE FROM {block_instances WHERE id=-1 OR id=-2 OR id=-3 OR id=-4 OR id=-5");
     }
 
 }
