@@ -37,6 +37,6 @@ $services = array(
         'elearning_prometheus' => array(
                 'functions' => array ('report_elearning_prometheus_endpoint'),
                 'restrictedusers' => 0,
-                'enabled'=>1,
+                'enabled' => 1,
         )
 );

@@ -25,30 +25,33 @@ require_once($CFG->dirroot . '/report/elearning/locallib.php');
 
 class report_elearning_external extends external_api {
 
-    public static function prometheus_endpoint_parameters(){
+    public static function prometheus_endpoint_parameters() {
         return new external_function_parameters(
-            array('categoryid' => new external_value(PARAM_INT, 'The category by default it is 0', VALUE_DEFAULT, 0),
-                  'visibility' => new external_value(PARAM_BOOL, "wether only invisible activities shall be counted", VALUE_DEFAULT, false),
-                  'nonews'     => new external_value(PARAM_BOOL,"if set to true news forums won't be counted", VALUE_DEFAULT, false))
+            array('categoryid' => new external_value(PARAM_INT, 'The category by default it is 0',
+                VALUE_DEFAULT, 0),
+                  'visibility' => new external_value(PARAM_BOOL, "wether only invisible activities shall be counted",
+                      VALUE_DEFAULT, false),
+                  'nonews'     => new external_value(PARAM_BOOL,"if set to true news forums won't be counted",
+                      VALUE_DEFAULT, false))
         );
     }
 
-    public static function prometheus_endpoint($categoryid= 0, $visibility = false, $nonews = false){
+    public static function prometheus_endpoint($categoryid= 0, $visibility = false, $nonews = false) {
         global $USER;
-        //Parameter validation
-        //REQUIRED
+        // Parameter validation
+        // REQUIRED
         $params = self::validate_parameters(self::prometheus_endpoint_parameters(),
             array('categoryid' => $categoryid,
                   'visibility' => $visibility,
                   'nonews'     => $nonews));
 
-        //Context validation
-        //OPTIONAL but in most web service it should present
+        // Context validation
+        // OPTIONAL but in most web service it should present
         $context = get_context_instance(CONTEXT_USER, $USER->id);
         self::validate_context($context);
 
-        //Capability checking
-        //OPTIONAL but in most web service it should present
+        // Capability checking
+        // OPTIONAL but in most web service it should present
         if (!has_capability('moodle/user:viewdetails', $context)) {
             throw new moodle_exception('cannotviewprofile');
         }
@@ -58,26 +61,26 @@ class report_elearning_external extends external_api {
         $config -> category = $categoryid;
         $config -> context = null;
 
-        //get data from locallib of the elearning project
+        // get data from locallib of the elearning project
         $b = get_data($visibility, $nonews, $config);
 
-        //prometheus data endpoint format
-        //format for summary: categorys_total{category="<category>"} <value>
-        //format for single datapoint: course_<course>{plugin="<block/mod>"} value
+        // prometheus data endpoint format
+        // format for summary: categorys_total{category="<category>"} <value>
+        // format for single datapoint: course_<course>{plugin="<block/mod>"} value
         $plugins = getHeaders();
-        //don't need ID and cat/course
+        // don't need ID and cat/course
         array_shift($plugins);
         array_shift($plugins);
 
         $return = "";
         $summary = "";
 
-        //O(n * d) !! d= 72 atm so technically O(n) just watch out cause d is the number of blocks and mods
-        //however since this is the purpose of the project...
-        foreach($b as $cat){
+        // O(n * d) !! d= 72 atm so technically O(n) just watch out cause d is the number of blocks and mods
+        // however since this is the purpose of the project...
+        foreach($b as $cat) {
             $name = str_replace(" ", "_" , $cat -> name);
             $tot = 0;
-            foreach($plugins as $plugin){
+            foreach($plugins as $plugin) {
                 if(isset($cat->$plugin)) {
                     $num = $cat -> $plugin;
                     $tot += $num;
@@ -86,7 +89,7 @@ class report_elearning_external extends external_api {
                 }
                 if(strpos($plugin,"block_") !== false){
                     $pluginname = $plugin;
-                }else{
+                }else {
                     $pluginname = "mod_" . $plugin;
                 }
                 $return .= "category_" . $cat -> id . "{name=\"{$name}\" path=\"{$cat->path}\" ".
@@ -101,7 +104,7 @@ class report_elearning_external extends external_api {
 
     }
 
-    public static function prometheus_endpoint_returns(){
+    public static function prometheus_endpoint_returns() {
         return new external_value(PARAM_TEXT, 'The e-learning report in Prometheus compatible formatting.');
     }
 

@@ -111,7 +111,6 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         // Write a table with 24 columns.
         $table = new html_table();
         $fulldata = get_data($elearningvisibility, $nonews, $a);
-        //begin insert
 
         $data1 = array();
         // Added up courses in this category, recursive.
@@ -126,9 +125,9 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
 
         $headerrow = new html_table_row();
         $totalheadercells = array();
-        //first table
-        $totalheadertitlesNice = getHeaders(false,true);
-        foreach ($totalheadertitlesNice as $totalheadertitle) {
+        // first table
+        $totalheadertitlesnice = getHeaders(false,true);
+        foreach ($totalheadertitlesnice as $totalheadertitle) {
             $cell = new html_table_cell($totalheadertitle);
             $cell->header = true;
             $totalheadercells[] = $cell;
@@ -166,21 +165,20 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             }
             $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
         }
-        //end
 
-        foreach ($fulldata as $row){
+        foreach ($fulldata as $row) {
             $rowdata = array();
             $total = 0; $totalcleared = 0;
-            foreach ($totalheadertitles as $index => $name){
-                if($name == "id"){
-                    $rowdata[$index] =  "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->mccid .
+            foreach ($totalheadertitles as $index => $name) {
+                if($name == "id") {
+                    $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->mccid .
                         "\" target=\"_blank\">" . $row->mccid . "</a>";
-                }elseif ($name == "category"){
-                    $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row -> mccid .
+                }else if ($name == "category") {
+                    $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->mccid .
                         "\" target=\"_blank\">" . get_stringpath($row->mccpath) . "</a><!--(" . $row->mccpath . ")-->";
-                }elseif ($name == "Sum"){
+                }else if ($name == "Sum") {
                     $rowdata[$index] = $total;
-                }elseif ($name == "Sum without files and folders"){
+                }else if ($name == "Sum without files and folders") {
                     $rowdata[$index] = $totalcleared;
                 }else {
                     if (isset($row->$name)) {
@@ -189,7 +187,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
                         }
                         $total += $row->$name;
                         $rowdata[$index] = $row->$name;
-                    }else{
+                    }else {
                         $rowdata[$index] = 0;
                     }
                 }
@@ -197,7 +195,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             $data1[] = $rowdata;
         }
 
-        $table -> data = $data1;
+        $table->data = $data1;
 
         if ($download == true) {
             $filename = "Export-E-Learning-" . date("Y-m-d-H-i-s") . ".xls";

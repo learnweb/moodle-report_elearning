@@ -9,7 +9,7 @@
 use PHPUnit\Framework\TestCase;
 
 global $CFG;
-require_once(__DIR__ . '/../../../config.php');
+require_once(__DIR__ . '../../../../config.php');
 require_once($CFG->dirroot . '/report/elearning/locallib.php'); // Include the code to test
 
 class report_elearning_locallib_test extends TestCase
