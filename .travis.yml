@@ -72,3 +72,10 @@ script:
   - moodle-plugin-ci behat
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
+stages:
+  - static
+  - name: develop
+    if: branch != master AND (type != pull_request OR head_branch != master) AND (tag IS blank)
+  - name: test
+    if: branch = master OR (type = pull_request AND head_branch = master) OR (tag IS present)

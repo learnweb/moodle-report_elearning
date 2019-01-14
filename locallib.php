@@ -96,7 +96,7 @@ class report_elearning_form extends moodleform {
 // moodle will overwrite your results for a course with the last it finds, leading to you discovering exactly one
 // blocktype per course id...
 /**Gets all blocks in a given course
- * @param $courseid the id of the course
+ * @param $courseid int the id of the course
  * @return array count of blocktype in that course
  * @throws dml_exception
  */
