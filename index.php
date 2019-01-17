@@ -69,13 +69,11 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
     $a = new stdClass();
     if (isset($_POST['elearningcategory'])) {
         $a->category = $_POST['elearningcategory'];
-        $a->context = get_instancecontext($_POST['elearningcategory']);
         $resultstring = get_string('recap', 'report_elearning', $a);
         $visiblecount = get_coursecategorycoursecount(get_coursecategorypath($_POST['elearningcategory']), true);
         $invisiblecount = get_coursecategorycoursecount(get_coursecategorypath($_POST['elearningcategory']), false);
     } else {
         $a->category = $data->elearningcategory;
-        $a->context = get_instancecontext($data->elearningcategory);
         $resultstring = get_string('recap', 'report_elearning', $a);
         $visiblecount = get_coursecategorycoursecount(get_coursecategorypath($data->elearningcategory), true);
         $invisiblecount = get_coursecategorycoursecount(get_coursecategorypath($data->elearningcategory), false);
