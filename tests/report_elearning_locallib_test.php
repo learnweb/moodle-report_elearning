@@ -6,8 +6,6 @@
  * Time: 12:38
  */
 
-use PHPUnit\Framework\TestCase;
-
 //defined('MOODLE_INTERNAL') || die();
 global $CFG;
 define('CLI_SCRIPT', true);
@@ -15,13 +13,25 @@ require_once(__DIR__ . '/../../../config.php');
 require_once($CFG->dirroot . '/report/elearning/locallib.php'); // Include the code to test
 
 $block_pre = "elearning_report_test";
-class report_elearning_locallib_test extends TestCase
+class report_elearning_locallib_test extends \PHPUnit\Framework\TestCase
 {
 
 
     public function setUp()
     {
         global $DB, $block_pre;
+
+        $course1data = new stdClass();
+        $course1data->shortname = "test1";
+        $course1data->fullname="Test1";
+        $course1data->category_path="Miscellaneous";
+        $course1data->visible = 1;
+        $course1data->startdate = "01.12.2018";
+        $course1data->enddate= "02.12.2018";
+        ///create_course($course1data);
+
+
+
         $standardObject= new stdClass();
         $standardObject -> showinsubcontexts = 0;
         $standardObject -> requiredbytheme = 0;
@@ -94,6 +104,42 @@ class report_elearning_locallib_test extends TestCase
         $block_count-> $block_name_2 = 1;
         $block_count-> $block_name_3 = 1;
         $this -> assertTrue($this->same_block_count($blocks, $block_count));
+    }
+
+    function test_get_all_courses(){
+        global $DB;
+        $misc_courses = get_all_courses(get_array_for_categories(-1, array()));
+        $misc_courses_correct = $DB -> get_records_sql("SELECT id FROM {course} WHERE category = 1");
+        $childs = $misc_courses[1]->childs;
+        $this->assertEquals(sizeof($misc_courses_correct), sizeof($childs));
+        $this->assertContains(2, array('2'));
+        foreach($misc_courses_correct as $course){
+            $this->assertContains($course->id, $childs);
+        }
+
+    }
+
+    function test_get_array_for_categories(){
+        global $DB;
+        $categories_test = get_array_for_categories(1, array());
+        $categories_correct = $DB->get_records_sql("SELECT id FROM {course_categories} WHERE depth <= 1");
+        while(sizeof($categories_test) != 0 and sizeof($categories_correct) != 0){
+            $this->assertEquals(array_shift($categories_correct)->id, array_shift($categories_test)->id);
+        }
+        $this->assertEquals( 0,sizeof($categories_test));
+        $this->assertEquals( 0,sizeof($categories_correct));
+
+        $categories_test = get_array_for_categories(2, array());
+        $categories_correct = $DB->get_records_sql("SELECT id FROM {course_categories} WHERE depth <= 2");
+        while(sizeof($categories_test) != 0 and sizeof($categories_correct) != 0){
+            $this->assertEquals(array_shift($categories_correct)->id, array_shift($categories_test)->id);
+        }
+        $this->assertEquals( 0,sizeof($categories_test));
+        $this->assertEquals( 0,sizeof($categories_correct));
+
+        $categories_test = get_array_for_categories(0, array());
+        $categories_correct = $DB->get_records_sql("SELECT id FROM {course_categories}");
+        $this->assertEquals(sizeof($categories_correct), sizeof($categories_test));
     }
 
 }
