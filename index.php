@@ -111,11 +111,15 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $resultstring .= "<br />&#160;<br />\n";
         // Write a table with 24 columns.
         $table = new html_table();
+        /// Get the data from the locallib.
         $rawdata = get_data($elearningvisibility, $nonews, $a);
+        /// The api in the locallib will only return plugins that have any data. However we also want to list no data.
         $rec = get_array_for_categories(-1);
         $plugins = get_all_plugin_names(array("mod", "block"));
+        /// get all courses of a category
         $rec = get_all_courses($rec);
 
+        /// Restructuring. Get categories instead of Plugins as main reference.
         foreach ($rawdata as $plugin => $plugindata){
             foreach ($plugindata as $catid => $count){
                 if(!isset($rec[$catid]->$plugin)){
@@ -180,6 +184,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
         }
 
+        /// take the data and push it into the html table.
         foreach ($rec as $row) {
             $rowdata = array();
             $total = 0; $totalcleared = 0;
@@ -195,7 +200,9 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
                 }else if ($name == "Sum without files and folders") { /// Same old same old
                     $rowdata[$index] = $totalcleared;
                 }else { /// default handling
+                    /// If there is data add it else add a default of 0.
                     if (isset($row->$name)) {
+                        /// If it isn't a folder or resource add it's amount to $totalcleared
                         if (!($name == "folder" || $name == "resource")) {
                             $totalcleared += $row->$name;
                         }
@@ -206,9 +213,10 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
                     }
                 }
             }
+            /// push the categorysdata as new row to the tabledata
             $data1[] = $rowdata;
         }
-
+        /// and finally push it to the table.
         $table->data = $data1;
 
         if ($download == true) {

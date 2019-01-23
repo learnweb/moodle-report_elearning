@@ -72,17 +72,24 @@ class report_elearning_external extends external_api {
         $return = "";
         $summary = "";
 
+        ///The api in the locallib will only return plugins that have any data. However we also want to list no data.
         $mods = get_all_plugin_names(array("mod"));
         $blocks = get_all_plugin_names(array("block"));
         $rec = get_array_for_categories(-1);
 
         foreach($mods as $plugin){
+            /// We go throug all plugins, if there is any data for this plugin, it is included in $b.
+            /// If there is absolutely no data for this plugin we need to set plugindata to an empty array
+            /// ...because otherwise it'll still be the the data from the last plugin that had any data.
             if(isset($b[$plugin])){
                 $plugindata = $b[$plugin];
             }else{
                 $plugindata = array();
             }
+            /// for each plugin we want to output the data for all the categorys.
             foreach ($rec as $category){
+                /// If the plugin is used by the current category, the amount of usages are stored in it's $plugindata.
+                /// If there is data we'll report this data else we report 0 use cases.
                 if(isset($plugindata[$category->id])){
                     $return .= "category_" . $category->id . "{name=\"{$category->name}\" path=\"{$category->path}\" ".
                         "explicitpath=\"{$category->readablepath}\" plugin=\"mod_{$plugin}\"} {$plugindata[$category->id]}" . "\n";
@@ -93,6 +100,7 @@ class report_elearning_external extends external_api {
             }
         }
 
+        /// These loops are the same except for the preceding mod_ or block_ please refer to the explanations given there.
         foreach($blocks as $plugin){
             if(isset($b[$plugin])){
                 $plugindata = $b[$plugin];

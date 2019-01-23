@@ -226,13 +226,21 @@ function get_array_for_categories(int $max_depth){
     }
 
     foreach($categorys as $category){
+        /// We want to add a path that consists of the categorys names instead of of their ids.
+        /// So first we'll split them up so we have all the ids.
         $path = explode("/", $category -> path);
+        /// The path is preceeded by a / so $path[] is currently "" we don't want nor need that so kill it.
         array_shift($path);
+        /// initialize
         $category -> readablepath = "";
         foreach ($path as $instance){
+            /// For each categoryid we'll now fetch that categorys name and append it to the "readablepath" that way
+            /// ...we have the decoded path in the end.
             $category -> readablepath .= "/" . $categorys[$instance] -> name;
         }
+        /// we'll never need the depth again so goodbye.
         unset($category -> depth);
+        /// now just rematch the category to the $categorys array. I really wonder wether a pointer would've been better.
         $categorys[$category->id] = $category;
     }
     return $categorys;
