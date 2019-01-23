@@ -66,40 +66,52 @@ class report_elearning_external extends external_api {
 
         // prometheus data endpoint format
         // format for summary: categorys_total{category="<category>"} <value>
-        // format for single datapoint: course_<course>{plugin="<block/mod>"} value
-        $plugins = getHeaders();
+        // format for single datapoint: category_<categoryid>{name=name, path=path, explicitpath=explicitpath, pugin=pluginname} value
         // don't need ID and cat/course
-        array_shift($plugins);
-        array_shift($plugins);
 
         $return = "";
         $summary = "";
 
-        // O(n * d) !! d= 72 atm so technically O(n) just watch out cause d is the number of blocks and mods
-        // however since this is the purpose of the project...
-        foreach($b as $cat) {
-            $name = str_replace(" ", "_" , $cat -> name);
-            $tot = 0;
-            foreach($plugins as $plugin) {
-                if(isset($cat->$plugin)) {
-                    $num = $cat -> $plugin;
-                    $tot += $num;
-                }else {
-                    $num = 0;
-                }
-                if(strpos($plugin,"block_") !== false){
-                    $pluginname = $plugin;
-                }else {
-                    $pluginname = "mod_" . $plugin;
-                }
-                $return .= "category_" . $cat -> id . "{name=\"{$name}\" path=\"{$cat->path}\" ".
-               "explicitpath=\"{$cat->readablepath}\" plugin=\"{$pluginname}\"} {$num}" . "\n";
+        $mods = get_all_plugin_names(array("mod"));
+        $blocks = get_all_plugin_names(array("block"));
+        $rec = get_array_for_categories(-1);
+
+        foreach($mods as $plugin){
+            if(isset($b[$plugin])){
+                $plugindata = $b[$plugin];
+            }else{
+                $plugindata = array();
             }
-            $summary .= "Category_Overview{id=\"{$cat->id}\" name=\"{$name}\" path=\"{$cat->path}\" ".
-                " explicitpath=\"{$cat->readablepath}\"} ". $tot ."\n";
+            foreach ($rec as $category){
+                if(isset($plugindata[$category->id])){
+                    $return .= "category_" . $category->id . "{name=\"{$category->name}\" path=\"{$category->path}\" ".
+                        "explicitpath=\"{$category->readablepath}\" plugin=\"mod_{$plugin}\"} {$plugindata[$category->id]}" . "\n";
+                }else{
+                    $return .= "category_" . $category->id . "{name=\"{$category->name}\" path=\"{$category->path}\" ".
+                        "explicitpath=\"{$category->readablepath}\" plugin=\"mod_{$plugin}\"} 0" . "\n";
+                }
+            }
         }
 
-        return $return . $summary;
+        foreach($blocks as $plugin){
+            if(isset($b[$plugin])){
+                $plugindata = $b[$plugin];
+            }else{
+                $plugindata = array();
+            }
+            foreach ($rec as $category){
+                if(isset($plugindata[$category->id])){
+                    $return .= "category_" . $category->id . "{name=\"{$category->name}\" path=\"{$category->path}\" ".
+                        "explicitpath=\"{$category->readablepath}\" plugin=\"block_{$plugin}\"} {$plugindata[$category->id]}" . "\n";
+                }else{
+                    $return .= "category_" . $category->id . "{name=\"{$category->name}\" path=\"{$category->path}\" ".
+                        "explicitpath=\"{$category->readablepath}\" plugin=\"block_{$plugin}\"} 0" . "\n";
+                }
+            }
+        }
+
+
+        return $return;
 
 
     }

@@ -25,12 +25,13 @@
  * Main file for report
  *
  * @see doc/html/ for documentation
- *
+
  */
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->libdir . '/accesslib.php');
 require_once($CFG->dirroot . '/lib/statslib.php');
+require_once($CFG->dirroot . '/report/elearning/form.php');
 require_once($CFG->dirroot . '/report/elearning/locallib.php');
 require_once($CFG->dirroot . '/course/lib.php');
 
@@ -41,8 +42,8 @@ $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/report/elearning/index.php'));
 $output = $PAGE->get_renderer('report_elearning');
 
-$mform = new report_elearning_form(new moodle_url('/report/elearning/'));
-
+$mform = new _form(new moodle_url('/report/elearning/'));
+/// Extract all this data
 if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['download']))) {
     // Processing of the submitted form.
     $data = $mform->get_data();
@@ -69,11 +70,13 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
     $a = new stdClass();
     if (isset($_POST['elearningcategory'])) {
         $a->category = $_POST['elearningcategory'];
+        $a->context = get_instancecontext($_POST['elearningcategory']);
         $resultstring = get_string('recap', 'report_elearning', $a);
         $visiblecount = get_coursecategorycoursecount(get_coursecategorypath($_POST['elearningcategory']), true);
         $invisiblecount = get_coursecategorycoursecount(get_coursecategorypath($_POST['elearningcategory']), false);
     } else {
         $a->category = $data->elearningcategory;
+        $a->context = get_instancecontext($data->elearningcategory);
         $resultstring = get_string('recap', 'report_elearning', $a);
         $visiblecount = get_coursecategorycoursecount(get_coursecategorypath($data->elearningcategory), true);
         $invisiblecount = get_coursecategorycoursecount(get_coursecategorypath($data->elearningcategory), false);
@@ -108,7 +111,20 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $resultstring .= "<br />&#160;<br />\n";
         // Write a table with 24 columns.
         $table = new html_table();
-        $fulldata = get_data($elearningvisibility, $nonews, $a);
+        $rawdata = get_data($elearningvisibility, $nonews, $a);
+        $rec = get_array_for_categories(-1);
+        $plugins = get_all_plugin_names(array("mod", "block"));
+        $rec = get_all_courses($rec);
+
+        foreach ($rawdata as $plugin => $plugindata){
+            foreach ($plugindata as $catid => $count){
+                if(!isset($rec[$catid]->$plugin)){
+                    $rec[$catid]->$plugin = 0;
+                }
+                $rec[$catid]->$plugin += $count;
+            }
+        }
+
 
         $data1 = array();
         // Added up courses in this category, recursive.
@@ -164,21 +180,21 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
         }
 
-        foreach ($fulldata as $row) {
+        foreach ($rec as $row) {
             $rowdata = array();
             $total = 0; $totalcleared = 0;
             foreach ($totalheadertitles as $index => $name) {
-                if($name == "id") {
-                    $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->mccid .
-                        "\" target=\"_blank\">" . $row->mccid . "</a>";
-                }else if ($name == "category") {
-                    $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->mccid .
-                        "\" target=\"_blank\">" . get_stringpath($row->mccpath) . "</a><!--(" . $row->mccpath . ")-->";
-                }else if ($name == "Sum") {
+                if($name == "id") {/// id is special, we want to have a link there.
+                    $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->id .
+                        "\" target=\"_blank\">" . $row->id . "</a>";
+                }else if ($name == "category") {/// Same here
+                    $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->id .
+                        "\" target=\"_blank\">" . get_stringpath($row->path) . "</a><!--(" . $row->path . ")-->";
+                }else if ($name == "Sum") { /// Sum is also not in the data but rather added up in this loop
                     $rowdata[$index] = $total;
-                }else if ($name == "Sum without files and folders") {
+                }else if ($name == "Sum without files and folders") { /// Same old same old
                     $rowdata[$index] = $totalcleared;
-                }else {
+                }else { /// default handling
                     if (isset($row->$name)) {
                         if (!($name == "folder" || $name == "resource")) {
                             $totalcleared += $row->$name;
