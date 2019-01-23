@@ -14,14 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Created by PhpStorm.
- * User: robintschudi
- * Date: 22.01.19
- * Time: 14:00
- */
-
-defined(MOODLE_INTERNAL || die);
+defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/formslib.php');
 
 class _form extends moodleform {
@@ -137,14 +130,14 @@ function get_coursecategorypath($id) {
     }
 }
 
-function get_all_courses($cats){
-    foreach ($cats as $cat){
-        $cat -> childs = array();
+function get_all_courses($cats) {
+    foreach ($cats as $cat) {
+        $cat->childs = array();
     }
     global $DB;
 
-    $c = $DB -> get_records_sql("SELECT id, category FROM {course} WHERE NOT category = 0");
-    foreach($c as $course){
+    $c = $DB->get_records_sql("SELECT id, category FROM {course} WHERE NOT category = 0");
+    foreach ($c as $course) {
         array_push($cats[$course->category]->childs, $course->id);
     }
 
@@ -152,29 +145,29 @@ function get_all_courses($cats){
 
 }
 
-const types = array("mod", "block");
-function getHeaders(bool $nonrecursive = false, bool $humanreadable = false){
+const TYPES = array("mod", "block");
+function get_table_headers(bool $nonrecursive = false, bool $humanreadable = false) {
     $pluginman = core_plugin_manager::instance();
 
-    if($humanreadable){
+    if ($humanreadable) {
         $returnarray = array("ID");
-    }else {
+    } else {
         $returnarray = array("id");
     }
 
-    if(!$nonrecursive){
+    if (!$nonrecursive) {
         array_push($returnarray, "category");
-    }else{
+    } else {
         array_push($returnarray, "course");
     }
 
-    foreach(types as $type) {
+    foreach (TYPES as $type) {
         $pluginarray = $pluginman->get_plugins_of_type($type);
         foreach ($pluginarray as $pluigin) {
-            if($type == "mod"){
-                $pluginname = $pluigin -> name;
-            }else{
-                $pluginname = $type . "_" . $pluigin -> name;
+            if ($type == "mod") {
+                $pluginname = $pluigin->name;
+            } else {
+                $pluginname = $type . "_" . $pluigin->name;
             }
             if (!$humanreadable) {
                 array_push($returnarray, $pluginname);
@@ -185,8 +178,7 @@ function getHeaders(bool $nonrecursive = false, bool $humanreadable = false){
     }
 
     array_push($returnarray, "Sum");
-    array_push($returnarray,"Sum without files and folders");
-
+    array_push($returnarray, "Sum without files and folders");
 
     return $returnarray;
 }

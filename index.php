@@ -111,18 +111,18 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $resultstring .= "<br />&#160;<br />\n";
         // Write a table with 24 columns.
         $table = new html_table();
-        /// Get the data from the locallib.
+        // Get the data from the locallib.
         $rawdata = get_data($elearningvisibility, $nonews, $a);
-        /// The api in the locallib will only return plugins that have any data. However we also want to list no data.
+        // The api in the locallib will only return plugins that have any data. However we also want to list no data.
         $rec = get_array_for_categories(-1);
         $plugins = get_all_plugin_names(array("mod", "block"));
-        /// get all courses of a category
+        // Get all courses of a category.
         $rec = get_all_courses($rec);
 
-        /// Restructuring. Get categories instead of Plugins as main reference.
-        foreach ($rawdata as $plugin => $plugindata){
-            foreach ($plugindata as $catid => $count){
-                if(!isset($rec[$catid]->$plugin)){
+        // Restructuring. Get categories instead of Plugins as main reference.
+        foreach ($rawdata as $plugin => $plugindata) {
+            foreach ($plugindata as $catid => $count) {
+                if (!isset($rec[$catid]->$plugin)) {
                     $rec[$catid]->$plugin = 0;
                 }
                 $rec[$catid]->$plugin += $count;
@@ -135,7 +135,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         $totalheaderrow = new html_table_row();
         $totalheadercell = new html_table_cell(get_string('categorytotal', 'report_elearning'));
         $totalheadercell->header = true;
-        $totalheadertitles = getHeaders();
+        $totalheadertitles = get_table_headers();
         $totalheadercell->colspan = count($totalheadertitles);
         $totalheadercell->attributes['class'] = 'c0';
         $totalheaderrow->cells = array($totalheadercell);
@@ -143,8 +143,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
 
         $headerrow = new html_table_row();
         $totalheadercells = array();
-        // first table
-        $totalheadertitlesnice = getHeaders(false,true);
+        $totalheadertitlesnice = get_table_headers(false, true);
         foreach ($totalheadertitlesnice as $totalheadertitle) {
             $cell = new html_table_cell($totalheadertitle);
             $cell->header = true;
@@ -184,39 +183,39 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
             $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
         }
 
-        /// take the data and push it into the html table.
+        // Take the data and push it into the html table.
         foreach ($rec as $row) {
             $rowdata = array();
             $total = 0; $totalcleared = 0;
             foreach ($totalheadertitles as $index => $name) {
-                if($name == "id") {/// id is special, we want to have a link there.
+                if ($name == "id") {// See id is special, we want to have a link there.
                     $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->id .
                         "\" target=\"_blank\">" . $row->id . "</a>";
-                }else if ($name == "category") {/// Same here
+                } else if ($name == "category") {// Same here.
                     $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->id .
                         "\" target=\"_blank\">" . get_stringpath($row->path) . "</a><!--(" . $row->path . ")-->";
-                }else if ($name == "Sum") { /// Sum is also not in the data but rather added up in this loop
+                } else if ($name == "Sum") { // Sum is also not in the data but rather added up in this loop.
                     $rowdata[$index] = $total;
-                }else if ($name == "Sum without files and folders") { /// Same old same old
+                } else if ($name == "Sum without files and folders") { // Same old same old.
                     $rowdata[$index] = $totalcleared;
-                }else { /// default handling
-                    /// If there is data add it else add a default of 0.
+                } else { // Default handling.
+                    // If there is data add it else add a default of 0.
                     if (isset($row->$name)) {
-                        /// If it isn't a folder or resource add it's amount to $totalcleared
+                        // If it isn't a folder or resource add it's amount to $totalcleared.
                         if (!($name == "folder" || $name == "resource")) {
                             $totalcleared += $row->$name;
                         }
                         $total += $row->$name;
                         $rowdata[$index] = $row->$name;
-                    }else {
+                    } else {
                         $rowdata[$index] = 0;
                     }
                 }
             }
-            /// push the categorysdata as new row to the tabledata
+            // Push the categorysdata as new row to the tabledata.
             $data1[] = $rowdata;
         }
-        /// and finally push it to the table.
+        // And finally push it to the table.
         $table->data = $data1;
 
         if ($download == true) {
