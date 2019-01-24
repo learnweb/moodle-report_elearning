@@ -43,7 +43,8 @@ $PAGE->set_url(new moodle_url('/report/elearning/index.php'));
 $output = $PAGE->get_renderer('report_elearning');
 
 $mform = new _form(new moodle_url('/report/elearning/'));
-// Extract all this data.
+// Extract all this data
+
 if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['download']))) {
     // Processing of the submitted form.
     $data = $mform->get_data();
@@ -93,19 +94,9 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         // There are results.
         if ($coursecount == 1) {
             $a->count = 1;
-            if ($elearningvisibility == true) {
-                $a->visibility = get_string('shown', 'report_elearning');
-            } else {
-                $a->visibility = get_string('hiddenandshown', 'report_elearning');
-            }
             $resultstring .= get_string('courseincategorycount', 'report_elearning', $a);
         } else {
             $a->count = $coursecount;
-            if ($elearningvisibility == true) {
-                $a->visibility = get_string('shownplural', 'report_elearning');
-            } else {
-                $a->visibility = get_string('hiddenandshownplural', 'report_elearning');
-            }
             $resultstring .= get_string('courseincategorycountplural', 'report_elearning', $a);
         }
         $resultstring .= "<br />&#160;<br />\n";
@@ -184,7 +175,11 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         }
 
         // Take the data and push it into the html table.
+        $category = $a->category;
         foreach ($rec as $row) {
+            if ($category != 0 and $row->id != $category and !(strpos($row->path, "/$category/") !== false)) {
+                continue;
+            }
             $rowdata = array();
             $total = 0; $totalcleared = 0;
             foreach ($totalheadertitles as $index => $name) {

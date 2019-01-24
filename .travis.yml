@@ -5,7 +5,7 @@ notifications:
   email: false
 
 addons:
-  postgresql: "9.4"
+  postgresql: "10.4"
 
 php:
   - 7.2
@@ -38,20 +38,20 @@ before_install:
 jobs:
   include:
     # Prechecks against latest Moodle stable only.
-    - stage: static
-      php: 7.2
-      env: DB=mysqli MOODLE_BRANCH=master #MOODLE_36_STABLE
-      install:
-        - moodle-plugin-ci install --no-init
-      script:
-        - moodle-plugin-ci phplint
-        - moodle-plugin-ci phpcpd
-        - moodle-plugin-ci phpmd
-        - moodle-plugin-ci codechecker
-        - moodle-plugin-ci savepoints
-        # - moodle-plugin-ci mustache
-        - moodle-plugin-ci grunt
-        - moodle-plugin-ci validate
+    #- stage: static
+    #  php: 7.2
+    #  env: DB=mysqli MOODLE_BRANCH=master #MOODLE_36_STABLE
+    #  install:
+    #    - moodle-plugin-ci install --no-init
+    #  script:
+    #    - moodle-plugin-ci phplint
+    #    - moodle-plugin-ci phpcpd
+    #    - moodle-plugin-ci phpmd
+    #    - moodle-plugin-ci codechecker
+    #    - moodle-plugin-ci savepoints
+    #    # - moodle-plugin-ci mustache
+    #    - moodle-plugin-ci grunt
+    #    - moodle-plugin-ci validate
     # Smaller build matrix for development builds
     - stage: develop
       php: 7.2

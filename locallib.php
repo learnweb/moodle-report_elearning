@@ -153,6 +153,9 @@ function get_plugin_data() {
             if (!isset($refineddata[$plugin])) {
                 $refineddata[$plugin] = array();
             }
+            if (!property_exists($coursedata, 'count')) {
+                print_r($coursedata);
+            }
             // If there hasn't been a course of this category with this plugin yet, we'll want to set the initial value.
             // If there has however we don't want to overwrite the previous value but rather add to it.
             if (!isset($refineddata[$plugin][$catid])) {

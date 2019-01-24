@@ -28,13 +28,10 @@ class _form extends moodleform {
         $all = array();
 
         // All needs to be on very first place.
-        $allcount = '';
-        $visiblecount = get_coursecategorycoursecount(get_coursecategorypath(0), true);
-        $invisiblecount = get_coursecategorycoursecount(get_coursecategorypath(0), false);
+        $count = get_coursecategorycoursecount(get_coursecategorypath(0));
 
-        $allcount .= " (" . $visiblecount . " " . get_string('shownplural', 'report_elearning') . ", " . $invisiblecount .
-            " " . get_string('hiddenplural', 'report_elearning') . ", " . get_string('total', 'report_elearning') .
-            " " . ($invisiblecount + $visiblecount) . ")";
+        $allcount = " (" . get_string('total', 'report_elearning') .
+            " " . $count . ")";
         $all[0] = get_string('all', 'report_elearning') . $allcount;
 
         $coursecat = $DB->get_records("course_categories", array(), "sortorder ASC", "id,name,path");
@@ -45,12 +42,10 @@ class _form extends moodleform {
             foreach ($components as $component) {
                 $fullname .= ' / ' . format_string($coursecat[$component]->name);
             }
-            $visiblecount = get_coursecategorycoursecount(get_coursecategorypath($cat->id), true);
-            $invisiblecount = get_coursecategorycoursecount(get_coursecategorypath($cat->id), false);
+            $count = get_coursecategorycoursecount(get_coursecategorypath($cat->id));
 
-            $fullname .= " (" . $visiblecount . " " . get_string('shownplural', 'report_elearning') . ", " . $invisiblecount .
-                " " . get_string('hiddenplural', 'report_elearning') . ", " . get_string('total', 'report_elearning') .
-                " " . ($invisiblecount + $visiblecount) . ")";
+            $fullname .= " (" . get_string('total', 'report_elearning') .
+                " " . ($count) . ")";
             $all[$id] = substr($fullname, 3);
         }
 
@@ -60,12 +55,6 @@ class _form extends moodleform {
         }
 
         $mform->addElement('select', 'elearningcategory', get_string('category', 'report_elearning'), $all);
-
-        $mform->addElement('checkbox', 'elearningvisibility', get_string('onlyshown', 'report_elearning'),
-            $mform->getSubmitValue('elearningvisibility'));
-        $mform->addElement('checkbox', 'nonews', get_string('nonewsforum', 'report_elearning'),
-            $mform->getSubmitValue('nonews'));
-
         $mform->addElement('submit', 'submitbutton', get_string('choose', 'report_elearning'));
     }
 
@@ -81,7 +70,7 @@ class _form extends moodleform {
  * @return int $sql The report table creation SQL.
  * @throws dml_exception
  */
-function get_coursecategorycoursecount($path, $onlyvisible) {
+function get_coursecategorycoursecount($path) {
     global $DB;
     $sql = "  SELECT c.id, cc.path
                 FROM {course} c
@@ -89,12 +78,6 @@ function get_coursecategorycoursecount($path, $onlyvisible) {
                   ON cc.id = c.category
                WHERE (cc.path LIKE CONCAT( '$path/%' )
                   OR cc.path LIKE CONCAT( '$path' ))";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "AND ((c.visible != 0) AND (cc.visible != 0))";
-    } else {
-        $sql .= "AND ((c.visible = 0) OR (cc.visible = 0))";
-    }
     return(count($DB->get_records_sql($sql)));
 }
 
