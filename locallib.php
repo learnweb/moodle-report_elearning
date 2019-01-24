@@ -77,7 +77,7 @@ function get_block_data() {
     // Since we have 2 sets, a unique identifier has to be the cartesian product of those sets.
     // in our case we have the set of courses (parentcontextid) and the set of blocks (blockname).
     // Therefore we will select the tuple of those as our primary key and group the count by that.
-    $data = $DB->get_records_sql("SELECT (parentcontextid, blockname) AS tupel, count(blockname) FROM {block_instances}
+    $data = $DB->get_records_sql("SELECT (parentcontextid, blockname) AS tupel, count(blockname) AS count FROM {block_instances}
                   GROUP BY tupel");
     // The data we receive is already sufficent, however it is really badly structured.
     // Therefore we want to refine our data to be made out of arrays (arrays outperform stdClasses 3 times in terms of speed)!
@@ -139,7 +139,7 @@ function get_plugin_data() {
     foreach ($plugins as $plugin) {
         // Some plugins are weird and create content for course 0.
         // There is no course 0. Therefore we'll use a WHERE clause.
-        $data[$plugin] = $DB->get_records_sql("SELECT course, count(course) FROM {{$plugin}} WHERE course <> 0 GROUP BY course ");
+        $data[$plugin] = $DB->get_records_sql("SELECT course, count(course) AS count FROM {{$plugin}} WHERE course <> 0 GROUP BY course ");
     }
     // Again we already fetched sufficient data, but again wanna refine it.
     $refineddata = array();
@@ -152,9 +152,6 @@ function get_plugin_data() {
             // If this is the first time we're operating on this plugin we need to initialize an array for its data.
             if (!isset($refineddata[$plugin])) {
                 $refineddata[$plugin] = array();
-            }
-            if (!property_exists($coursedata, 'count')) {
-                print_r($coursedata);
             }
             // If there hasn't been a course of this category with this plugin yet, we'll want to set the initial value.
             // If there has however we don't want to overwrite the previous value but rather add to it.
