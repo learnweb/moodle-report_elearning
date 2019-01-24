@@ -30,6 +30,8 @@ class report_elearning_locallib_testcase extends advanced_testcase
         // Setup category.
         $category = new stdClass(); $category->name = "testcategory";
         $this->categoryid = $DB->insert_record_raw('course_categories', $category);
+        $category->path = "/" . $this->categoryid; $category->id = $this->categoryid;
+        $DB->update_record('course_categories', $category);
 
         // Setup courses.
         $course1 = new stdClass(); $course1->category = $this->categoryid;
@@ -157,6 +159,17 @@ class report_elearning_locallib_testcase extends advanced_testcase
         $this->assertEquals($this->categoryid, $map[$this->course2id]);
     }
 
+
+    // Testing form.php.
+
+    public function test_get_coursecategorycoursecount() {
+        $this->assertEquals(2, get_coursecategorycoursecount("/" . $this->categoryid));
+    }
+
+    public function test_get_stringpath() {
+        $this->assertEquals("testcategory", get_stringpath("/" . $this->categoryid));
+    }
+
     public function test_get_all_courses() {
         global $DB;
         $misccourses = get_all_courses(get_array_for_categories(-1));
@@ -166,7 +179,22 @@ class report_elearning_locallib_testcase extends advanced_testcase
         foreach ($misccoursescorrect as $course) {
             $this->assertContains($course->id, $childs);
         }
-
     }
 
+    // This function is highly dependent on another function. We ONLY test for this functions cause.
+    public function test_get_table_headers() {
+        $headers = get_table_headers();
+        $this->assertEquals("id", array_shift($headers));
+        $this->assertEquals("category", array_shift($headers));
+        $this->assertEquals("Sum without files and folders", array_pop($headers));
+        $this->assertEquals("Sum", array_pop($headers));
+    }
+
+    public function test_get_shown_table_headers() {
+        $headers = get_shown_table_headers();
+        $this->assertEquals("ID", array_shift($headers));
+        $this->assertEquals("Category", array_shift($headers));
+        $this->assertEquals("Sum without files and folders", array_pop($headers));
+        $this->assertEquals("Sum", array_pop($headers));
+    }
 }
