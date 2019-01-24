@@ -77,8 +77,8 @@ function get_block_data() {
     // Since we have 2 sets, a unique identifier has to be the cartesian product of those sets.
     // in our case we have the set of courses (parentcontextid) and the set of blocks (blockname).
     // Therefore we will select the tuple of those as our primary key and group the count by that.
-    $data = $DB->get_records_sql("SELECT (parentcontextid, blockname) AS tupel, count(blockname) AS count FROM {block_instances}
-                  GROUP BY tupel");
+    $data = $DB->get_records_sql("SELECT concat(parentcontextid,',', blockname) AS tupel, count(blockname) AS count
+                  FROM {block_instances} GROUP BY tupel");
     // The data we receive is already sufficent, however it is really badly structured.
     // Therefore we want to refine our data to be made out of arrays (arrays outperform stdClasses 3 times in terms of speed)!
     $refineddata = array();
@@ -90,8 +90,8 @@ function get_block_data() {
     // Das ist leider keine bijektion. Übrigens auch keine in- oder surjektion.
     $map = get_child_map();
     foreach ($data as $record) {
-        // The tuples come as (contextid,blockname) so we strip the brackets and extract contextid and blockname.
-        $record->tupel = explode(",", str_replace(")", "", str_replace("(", "", $record->tupel)));
+        // The tuples come as contextid,blockname so we extract contextid and blockname.
+        $record->tupel = explode(",", $record->tupel);
         $contextid = $record->tupel[0];
         $blockname = $record->tupel[1];
         // There are blocks that exist outside of a course. In example the Dashboard has alot of blocks that

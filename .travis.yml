@@ -55,7 +55,7 @@ jobs:
     # Smaller build matrix for development builds
     - stage: develop
       php: 7.2
-      env: DB=pgsql MOODLE_BRANCH=master #MOODLE_36_STABLE
+      env: DB=mysqli MOODLE_BRANCH=master #MOODLE_36_STABLE
       install:
         - moodle-plugin-ci install
       script:
