@@ -13,35 +13,6 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
-
-function getHeaders($nonrecursive = false, $humanreadable = false){
-    $pluginman = core_plugin_manager::instance();
-    $pluginarray = $pluginman -> get_plugins_of_type("mod");
-
-    $returnarray = array("ID");
-
-    if(!$nonrecursive){
-        array_push($returnarray, "category");
-    }else{
-        array_push($returnarray, "course");
-    }
-
-    foreach($pluginarray as $pluigin) {
-        if(!$humanreadable) {
-            array_push($returnarray, $pluigin->name);
-        }else{
-            array_push($returnarray, get_string("pluginname", $pluigin->name));
-        }
-    }
-    array_push($returnarray, "Sum");
-    array_push($returnarray,"Sum without files and directories");
-
-
-    return $returnarray;
-}
-
-
 /**
  * Displays e-learning statistics data selection form and results.
  * @package    report_elearning
@@ -54,12 +25,13 @@ function getHeaders($nonrecursive = false, $humanreadable = false){
  * Main file for report
  *
  * @see doc/html/ for documentation
- *
+
  */
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->libdir . '/accesslib.php');
 require_once($CFG->dirroot . '/lib/statslib.php');
+require_once($CFG->dirroot . '/report/elearning/form.php');
 require_once($CFG->dirroot . '/report/elearning/locallib.php');
 require_once($CFG->dirroot . '/course/lib.php');
 
@@ -70,7 +42,8 @@ $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/report/elearning/index.php'));
 $output = $PAGE->get_renderer('report_elearning');
 
-$mform = new report_elearning_form(new moodle_url('/report/elearning/'));
+$mform = new _form(new moodle_url('/report/elearning/'));
+// Extract all this data
 
 if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['download']))) {
     // Processing of the submitted form.
@@ -121,128 +94,125 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
         // There are results.
         if ($coursecount == 1) {
             $a->count = 1;
-            if ($elearningvisibility == true) {
-                $a->visibility = get_string('shown', 'report_elearning');
-            } else {
-                $a->visibility = get_string('hiddenandshown', 'report_elearning');
-            }
             $resultstring .= get_string('courseincategorycount', 'report_elearning', $a);
         } else {
             $a->count = $coursecount;
-            if ($elearningvisibility == true) {
-                $a->visibility = get_string('shownplural', 'report_elearning');
-            } else {
-                $a->visibility = get_string('hiddenandshownplural', 'report_elearning');
-            }
             $resultstring .= get_string('courseincategorycountplural', 'report_elearning', $a);
         }
         $resultstring .= "<br />&#160;<br />\n";
         // Write a table with 24 columns.
         $table = new html_table();
+        // Get the data from the locallib.
+        $rawdata = get_data($elearningvisibility, $nonews, $a);
+        // The api in the locallib will only return plugins that have any data. However we also want to list no data.
+        $rec = get_array_for_categories(-1);
+        $plugins = get_all_plugin_names(array("mod", "block"));
+        // Get all courses of a category.
+        $rec = get_all_courses($rec);
+
+        // Restructuring. Get categories instead of Plugins as main reference.
+        foreach ($rawdata as $plugin => $plugindata) {
+            foreach ($plugindata as $catid => $count) {
+                if (!isset($rec[$catid]->$plugin)) {
+                    $rec[$catid]->$plugin = 0;
+                }
+                $rec[$catid]->$plugin += $count;
+            }
+        }
+
+
+        $data1 = array();
         // Added up courses in this category, recursive.
         $totalheaderrow = new html_table_row();
         $totalheadercell = new html_table_cell(get_string('categorytotal', 'report_elearning'));
         $totalheadercell->header = true;
-        $totalheadertitles = getHeaders();
+        $totalheadertitles = get_table_headers();
         $totalheadercell->colspan = count($totalheadertitles);
         $totalheadercell->attributes['class'] = 'c0';
         $totalheaderrow->cells = array($totalheadercell);
-        $table->data[] = $totalheaderrow;
+        $data1[] = $totalheaderrow;
 
         $headerrow = new html_table_row();
         $totalheadercells = array();
-        //first table
-        $totalheadertitlesNice = getHeaders(false,true);
-        foreach ($totalheadertitlesNice as $totalheadertitle) {
+        $totalheadertitlesnice = get_shown_table_headers();
+        foreach ($totalheadertitlesnice as $totalheadertitle) {
             $cell = new html_table_cell($totalheadertitle);
             $cell->header = true;
             $totalheadercells[] = $cell;
         }
         $headerrow->cells = $totalheadercells;
-        $table->data[] = $headerrow;
-        $rec = $DB->get_records_sql(get_tablesql($a->category, $elearningvisibility, $nonews));
-        foreach ($rec as $records) {
-            $tablearray = array();
-            $total = 0;
-            $totalnfnd = 0;
-            foreach ($totalheadertitles as $category){
-                if($category == "ID") {
-                    array_push($tablearray, "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $records->mccid .
-                        "\" target=\"_blank\">" . $records->mccid . "</a>");
-                }else if($category == "category"){
-                    array_push($tablearray,  "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $records -> mccid .
-                        "\" target=\"_blank\">" . get_stringpath($records->mccpath) . "</a><!--(" . $records->mccpath . ")-->" );
-                }else if($category == "Sum") {
-                    array_push($tablearray, $total);
-                }else if($category == "Sum without files and directories"){
-                    array_push($tablearray, $totalnfnd);
-                }else{
-                    $total += $records -> $category;
-                    if($category != "folder" and $category != "resource"){
-                        $totalnfnd += $records -> $category;
-                    }
-                    array_push($tablearray, $records -> $category);
-                }
-            }
-            $table-> data[] = $tablearray;
-        }
-
-        // Single courses in this category, non-recursive.
-        // ok so this seems a little bit like unnecessary work, it might be better to just include this as an option
-        // however from my understanding the guy I cloned this project from is a major contributer and I just started
-        // so I'll just assume that he's right, I'm wrong and this is in fact useful.
-        $detailheaderrow = new html_table_row();
-        $detailheadercell = new html_table_cell(get_string('justcategory', 'report_elearning'));
-        $detailheadercell->header = true;
-        $headertitles = getHeaders(true);
-        $detailheadercell->colspan = count($headertitles);
-        $detailheaderrow->cells = array($detailheadercell);
-        $table->data[] = $detailheaderrow;
-        $courseheaderrow = new html_table_row();
-        $headercells = array();
-        // second table
-        $headertitles = getHeaders(true, true);
-        foreach ($totalheadertitlesNice as $headertitle) {
-            $cell = new html_table_cell($headertitle);
-            $cell->header = true;
-            $headercells[] = $cell;
-        }
-        $courseheaderrow->cells = $headercells;
-        $table->data[] = $courseheaderrow;
+        $data1[] = $headerrow;
 
         if ($a->category == 0) {
             // All courses.
             if ($elearningvisibility == true) {
-                $coursesincategorysql = "SELECT id"
-                        . "                FROM {course}"
-                        . "               WHERE visible <> 0"
-                        . "                 AND id > 1"
-                        . "            ORDER BY sortorder";
+                $coursesincategorysql = "SELECT id, category"
+                    . "                FROM {course}"
+                    . "               WHERE visible <> 0"
+                    . "                 AND id > 1"
+                    . "            ORDER BY sortorder";
             } else {
-                $coursesincategorysql = "SELECT id"
-                        . "                FROM {course}"
-                        . "               WHERE id > 1"
-                        . "            ORDER BY sortorder";
+                $coursesincategorysql = "SELECT id, category"
+                    . "                FROM {course}"
+                    . "               WHERE id > 1"
+                    . "            ORDER BY sortorder";
             }
-            $coursesincategory = $DB->get_fieldset_sql($coursesincategorysql, array($a->category));
+            $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
         } else {
             if ($elearningvisibility == true) {
-                $coursesincategorysql = "SELECT id"
-                        . "                FROM {course}"
-                        . "               WHERE category = ?"
-                        . "                 AND visible <> 0"
-                        . "            ORDER BY sortorder";
+                $coursesincategorysql = "SELECT id, category"
+                    . "                FROM {course}"
+                    . "               WHERE category = ?"
+                    . "                 AND visible <> 0"
+                    . "            ORDER BY sortorder";
             } else {
-                $coursesincategorysql = "SELECT id"
-                        . "                FROM {course}"
-                        . "               WHERE category = ?"
-                        . "            ORDER BY sortorder";
+                $coursesincategorysql = "SELECT id, category"
+                    . "                FROM {course}"
+                    . "               WHERE category = ?"
+                    . "            ORDER BY sortorder";
             }
-            $coursesincategory = $DB->get_fieldset_sql($coursesincategorysql, array($a->category));
+            $coursesincategory = $DB->get_records_sql($coursesincategorysql, array($a->category));
         }
-        foreach ($coursesincategory as $courseid) {
-            $table->data[] = get_coursetablecontent($courseid, $elearningvisibility, $nonews);
+
+        // Take the data and push it into the html table.
+        $category = $a->category;
+        foreach ($rec as $row) {
+            if ($category != 0 and $row->id != $category and !(strpos($row->path, "/$category/") !== false)) {
+                continue;
+            }
+            $rowdata = array();
+            $total = 0; $totalcleared = 0;
+            foreach ($totalheadertitles as $index => $name) {
+                if ($name == "id") {// See id is special, we want to have a link there.
+                    $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->id .
+                        "\" target=\"_blank\">" . $row->id . "</a>";
+                } else if ($name == "category") {// Same here.
+                    $rowdata[$index] = "<a href=\"$CFG->wwwroot/course/index.php?categoryid=" . $row->id .
+                        "\" target=\"_blank\">" . get_stringpath($row->path) . "</a><!--(" . $row->path . ")-->";
+                } else if ($name == "Sum") { // Sum is also not in the data but rather added up in this loop.
+                    $rowdata[$index] = $total;
+                } else if ($name == "Sum without files and folders") { // Same old same old.
+                    $rowdata[$index] = $totalcleared;
+                } else { // Default handling.
+                    // If there is data add it else add a default of 0.
+                    if (isset($row->$name)) {
+                        // If it isn't a folder or resource add it's amount to $totalcleared.
+                        if (!($name == "folder" || $name == "resource")) {
+                            $totalcleared += $row->$name;
+                        }
+                        $total += $row->$name;
+                        $rowdata[$index] = $row->$name;
+                    } else {
+                        $rowdata[$index] = 0;
+                    }
+                }
+            }
+            // Push the categorysdata as new row to the tabledata.
+            $data1[] = $rowdata;
         }
+        // And finally push it to the table.
+        $table->data = $data1;
+
         if ($download == true) {
             $filename = "Export-E-Learning-" . date("Y-m-d-H-i-s") . ".xls";
             header("Content-type: application/x-msexcel");
@@ -289,32 +259,14 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
 /*
  * Debug flag -- if set to TRUE, debug output will be generated.
  */
-$debug = true;
+$debug = false;
 
 if ($debug) {
     ini_set('display_errors', 'On');
     error_reporting(E_ALL);
 }
 
-/**
- * This function prints a debug entry
- *
- * @param int $line Line on which function has been called
- * @param array $param Parameters (array) with data to print
- * @param bool $mustdie If true, execution stops
- */
-function dbg($line, $param = null, $mustdie = false) {
-    global $debug;
-    if ($debug) {
-        echo "<p>On line $line</p>";
-        if ($param) {
-            echo ""; // Vormals print_object($param).
-        }
-        if ($mustdie == true) {
-            die();
-        }
-    }
-}
+
 
 echo $OUTPUT->footer();
 // The end.
