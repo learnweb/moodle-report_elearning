@@ -45,4 +45,4 @@ Go to moodle, login as admin and update the database.
         static_configs:
           - targets: ['172.17.0.1']
     ```      
-    9. Add the Token.
+9. Add the Token.
