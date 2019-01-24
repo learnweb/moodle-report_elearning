@@ -259,32 +259,13 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
 /*
  * Debug flag -- if set to TRUE, debug output will be generated.
  */
-$debug = true;
+$debug = false;
 
 if ($debug) {
     ini_set('display_errors', 'On');
     error_reporting(E_ALL);
 }
 
-/**
- * This function prints a debug entry
- *
- * @param int $line Line on which function has been called
- * @param array $param Parameters (array) with data to print
- * @param bool $mustdie If true, execution stops
- */
-function dbg($line, $param = null, $mustdie = false) {
-    global $debug;
-    if ($debug) {
-        echo "<p>On line $line</p>";
-        if ($param) {
-            echo ""; // Vormals print_object($param).
-        }
-        if ($mustdie == true) {
-            die();
-        }
-    }
-}
 
 
 echo $OUTPUT->footer();
