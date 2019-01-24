@@ -16,8 +16,8 @@
 
 require_once(__DIR__ . '/../../../config.php');
 global $CFG;
-define('CLI_SCRIPT', true);
-require_once($CFG->dirroot . '/report/elearning/locallib.php'); // Include the code to test
+require_once($CFG->dirroot . '/report/elearning/locallib.php');
+require_once($CFG->dirroot . '/report/elearning/form.php');// Include the code to test.
 
 const BLOCKPRE = "elearning_report_test";
 class report_elearning_locallib_testcase extends advanced_testcase
@@ -26,7 +26,7 @@ class report_elearning_locallib_testcase extends advanced_testcase
 
     public function setUp() {
         global $DB;
-
+        $this->resetAfterTest();
         // Setup category.
         $category = new stdClass(); $category->name = "testcategory";
         $this->categoryid = $DB->insert_record_raw('course_categories', $category);
@@ -63,8 +63,33 @@ class report_elearning_locallib_testcase extends advanced_testcase
 
         foreach ($blocks as $block) {
             $data = (object)array_merge((array)$block, (array)$standardobject);
-            $DB ->insert_record_raw('block_instances', $data);
+            $DB->insert_record_raw('block_instances', $data);
         }
+
+        // Setup plugins.
+        $assign = new stdClass(); $assign->intro = "testquizz";
+        $feedback = new stdClass(); $feedback->intro = "testfeedback"; $feedback->page_after_submit = "blank";
+        $forum = new stdClass(); $forum->intro = "testforum";
+        $folder = new stdClass(); $folder->intro = "testfolder";
+
+        // Course 1.
+        $assign->course = $this->course1id;
+        $feedback->course = $this->course1id;
+        $folder->course = $this->course1id;
+        $forum->course = $this->course1id;
+        $DB->insert_record_raw('assign', $assign);
+        $DB->insert_record_raw('assign', $assign);
+        $DB->insert_record_raw('folder', $folder);
+        $DB->insert_record_raw('forum', $forum);
+
+        // Course 2.
+        $assign->course = $this->course2id;
+        $feedback->course = $this->course2id;
+        $folder->course = $this->course2id;
+        $forum->course = $this->course2id;
+        $DB->insert_record_raw('forum', $forum);
+        $DB->insert_record_raw('feedback', $feedback);
+        $DB->insert_record_raw('feedback', $feedback);
 
     }
 
@@ -74,26 +99,67 @@ class report_elearning_locallib_testcase extends advanced_testcase
          OR parentcontextid = '$this->coursecontext2'");
         $DB->delete_records_select("course_categories", "id='{$this->categoryid}'");
         $DB->delete_records_select("course", "id='{$this->course1id}' OR id='{$this->course2id}'");
+        $DB->delete_records_select("forum", "course='{$this->course1id}' OR course='{$this->course2id}'");
+        $DB->delete_records_select("assign", "course='{$this->course1id}' OR course='{$this->course2id}'");
+        $DB->delete_records_select("feedback", "course='{$this->course1id}' OR course='{$this->course2id}'");
+        $DB->delete_records_select("folder", "course='{$this->course1id}' OR course='{$this->course2id}'");
+
     }
 
-    // Function block_DB tests.
-
-    public function same_block_count ($a1, $a2) {
-        foreach ($a1 as $block) {
-            $blockname = $block->blockname;
-            if (strpos($blockname, BLOCKPRE) == -1) {
-                continue;
-            }
-            if ($a2->$blockname != $block->count) {
-                return false;
-            }
-        }
-        return true;
+    public function test_get_block_data() {
+        $blockdata = get_block_data();
+        $this->assertEquals(3, $blockdata[BLOCKPRE . "1"][$this->categoryid]);
+        $this->assertEquals(1, $blockdata[BLOCKPRE . "2"][$this->categoryid]);
+        $this->assertEquals(1, $blockdata[BLOCKPRE . "3"][$this->categoryid]);
+        $this->assertEquals(3, count($blockdata));
     }
 
-    protected function test_get_all_courses() {
+    public function test_get_plugin_data() {
+        $plugindata = get_plugin_data();
+        $this->assertEquals(2, $plugindata["assign"][$this->categoryid]);
+        $this->assertEquals(2, $plugindata["feedback"][$this->categoryid]);
+        $this->assertEquals(2, $plugindata["forum"][$this->categoryid]);
+        $this->assertEquals(1, $plugindata["folder"][$this->categoryid]);
+    }
+
+    public function test_get_data() {
+        $data = array_merge(get_plugin_data(), get_block_data());
+        $this->assertEquals(3, $data[BLOCKPRE . "1"][$this->categoryid]);
+        $this->assertEquals(1, $data[BLOCKPRE . "2"][$this->categoryid]);
+        $this->assertEquals(1, $data[BLOCKPRE . "3"][$this->categoryid]);
+        $this->assertEquals(2, $data["assign"][$this->categoryid]);
+        $this->assertEquals(2, $data["feedback"][$this->categoryid]);
+        $this->assertEquals(2, $data["forum"][$this->categoryid]);
+        $this->assertEquals(1, $data["folder"][$this->categoryid]);
+    }
+
+    public function test_get_array_for_categories() {
         global $DB;
-        $misccourses = get_all_courses(get_array_for_categories(-1, array() ));
+        $categoriestest = get_array_for_categories(0);
+        $categoriescorrect = $DB->get_records_sql("SELECT id FROM {course_categories}");
+        $this->assertEquals(count($categoriescorrect), count($categoriestest));
+        $this->assertEquals("testcategory", $categoriestest[$this->categoryid]->name);
+        $this->assertEquals(1, $categoriestest[1]->id);
+        $this->assertEquals("Miscellaneous", $categoriestest[1]->name);
+        $this->assertEquals("/1", $categoriestest[1]->path);
+        $this->assertEquals("/Miscellaneous", $categoriestest[1]->readablepath);
+    }
+
+    public function test_context_id_to_course_id_table() {
+        $map = context_id_to_course_id_table();
+        $this->assertEquals($this->course1id, $map[$this->coursecontext1]);
+        $this->assertEquals($this->course2id, $map[$this->coursecontext2]);
+    }
+
+    public function test_get_child_map() {
+        $map = get_child_map();
+        $this->assertEquals($this->categoryid, $map[$this->course1id]);
+        $this->assertEquals($this->categoryid, $map[$this->course2id]);
+    }
+
+    public function test_get_all_courses() {
+        global $DB;
+        $misccourses = get_all_courses(get_array_for_categories(-1));
         $misccoursescorrect = $DB->get_records_sql("SELECT id FROM {course} WHERE category = {$this->categoryid}");
         $childs = $misccourses[$this->categoryid]->childs;
         $this->assertEquals(count($misccoursescorrect), count($childs));
@@ -101,14 +167,6 @@ class report_elearning_locallib_testcase extends advanced_testcase
             $this->assertContains($course->id, $childs);
         }
 
-    }
-
-    protected function test_get_array_for_categories() {
-        global $DB;
-
-        $categoriestest = get_array_for_categories(0);
-        $categoriescorrect = $DB->get_records_sql("SELECT id FROM {course_categories}");
-        $this->assertEquals(count($categoriescorrect), count($categoriestest));
     }
 
 }
