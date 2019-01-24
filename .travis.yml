@@ -37,7 +37,7 @@ before_install:
 
 jobs:
   include:
-     # Prechecks against latest Moodle stable only.
+    # Prechecks against latest Moodle stable only.
     - stage: static
       php: 7.2
       env: DB=mysqli MOODLE_BRANCH=master #MOODLE_36_STABLE
@@ -52,7 +52,7 @@ jobs:
         # - moodle-plugin-ci mustache
         - moodle-plugin-ci grunt
         - moodle-plugin-ci validate
-     Smaller build matrix for development builds
+    # Smaller build matrix for development builds
     - stage: develop
       php: 7.2
       env: DB=mysqli MOODLE_BRANCH=master #MOODLE_36_STABLE
