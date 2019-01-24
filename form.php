@@ -87,7 +87,7 @@ function get_coursecategorycoursecount($path) {
  * @param string $intpath A path with the ids and slashes (e.g. /2/8/10).
  * @return string $stringpath A formulated path.
  */
-function get_stringpath($intpath) {
+function get_stringpath(string $intpath) {
     global $DB;
     $components = preg_split('/\//', $intpath);
     array_shift($components);
@@ -103,7 +103,7 @@ function get_stringpath($intpath) {
  * @param int $id A course category id.
  * @return string The according course category path.
  */
-function get_coursecategorypath($id) {
+function get_coursecategorypath(int $id) {
     global $DB;
     if ($id == 0) {
         return "";
@@ -113,7 +113,7 @@ function get_coursecategorypath($id) {
     }
 }
 
-function get_all_courses($cats) {
+function get_all_courses(array $cats) {
     foreach ($cats as $cat) {
         $cat->childs = array();
     }
@@ -161,7 +161,7 @@ function get_shown_table_headers() {
  * @param int $id A context id.
  * @return int The according context id.
  */
-function get_instancecontext($id) {
+function get_instancecontext(int $id) {
     global $DB;
     if ($id == 0) {
         return 0;
