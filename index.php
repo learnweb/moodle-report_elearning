@@ -43,7 +43,7 @@ $PAGE->set_url(new moodle_url('/report/elearning/index.php'));
 $output = $PAGE->get_renderer('report_elearning');
 
 $mform = new _form(new moodle_url('/report/elearning/'));
-// Extract all this data
+// Extract all this data.
 if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['download']))) {
     // Processing of the submitted form.
     $data = $mform->get_data();
@@ -143,7 +143,7 @@ if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['downloa
 
         $headerrow = new html_table_row();
         $totalheadercells = array();
-        $totalheadertitlesnice = get_table_headers(false, true);
+        $totalheadertitlesnice = get_shown_table_headers();
         foreach ($totalheadertitlesnice as $totalheadertitle) {
             $cell = new html_table_cell($totalheadertitle);
             $cell->header = true;

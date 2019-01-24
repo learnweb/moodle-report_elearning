@@ -22,7 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die;
-require_once($CFG->libdir . '/formslib.php');
 
 /**
  * This function returns an array with all plugin names of a given plugin type currently installed
@@ -33,11 +32,11 @@ function get_all_plugin_names(array $types) {
     $pluginman = core_plugin_manager::instance();
     $returnarray = array();
     foreach ($types as $type) {
-        // get all plugins of a given type
+        // Get all plugins of a given type.
         $pluginarray = $pluginman->get_plugins_of_type($type);
-        // plugins will be returned as objects so get the name of each and push it into a new array
-        foreach ($pluginarray as $pluigin) {
-            array_push($returnarray, $pluigin->name);
+        // Plugins will be returned as objects so get the name of each and push it into a new array.
+        foreach ($pluginarray as $plugin) {
+            array_push($returnarray, $plugin->name);
         }
     }
     return $returnarray;
@@ -48,8 +47,8 @@ function get_all_plugin_names(array $types) {
  * @throws dml_exception
  */
 // I honestly dislike this function since it takes up alot of memory.
-// Moodle has a function to convert a course id to a context id, but I havent found one for the other way around yet
-// since this caches all course contexts there is a lot of memory lost.
+// Moodle has a function to convert a course id to a context id, but I havent found one for the other way around yet.
+// Since this caches all course contexts there is a lot of memory lost.
 
 function context_id_to_course_id_table() {
     global $DB;
@@ -114,7 +113,7 @@ function get_block_data() {
         if (!isset($refineddata[$blockname][$categoryid])) {
             $refineddata[$blockname][$categoryid] = $record->count;
         } else {
-            $refineddata[$blockname][$categoryid] = $record->count;
+            $refineddata[$blockname][$categoryid] += $record->count;
         }
     }
 

@@ -29,24 +29,15 @@ require_once($CFG->dirroot . '/report/elearning/locallib.php');
 class report_elearning_external extends external_api {
 
     public static function prometheus_endpoint_parameters() {
-        return new external_function_parameters(
-            array('categoryid' => new external_value(PARAM_INT, 'The category by default it is 0',
-                VALUE_DEFAULT, 0),
-                  'visibility' => new external_value(PARAM_BOOL, "wether only invisible activities shall be counted",
-                      VALUE_DEFAULT, false),
-                  'nonews'     => new external_value(PARAM_BOOL, "if set to true news forums won't be counted",
-                      VALUE_DEFAULT, false))
-        );
+        return new external_function_parameters(array());
     }
 
-    public static function prometheus_endpoint($categoryid= 0, $visibility = false, $nonews = false) {
+    public static function prometheus_endpoint() {
         global $USER;
         // Parameter validation
         // REQUIRED.
         $params = self::validate_parameters(self::prometheus_endpoint_parameters(),
-            array('categoryid' => $categoryid,
-                  'visibility' => $visibility,
-                  'nonews'     => $nonews));
+            array());
 
         // Context validation
         // OPTIONAL but in most web service it should present.

@@ -81,7 +81,7 @@ class _form extends moodleform {
  * @return int $sql The report table creation SQL.
  * @throws dml_exception
  */
-function get_coursecategorycoursecount($path, $onlyvisible=false) {
+function get_coursecategorycoursecount($path, $onlyvisible) {
     global $DB;
     $sql = "  SELECT c.id, cc.path
                 FROM {course} c
@@ -146,40 +146,30 @@ function get_all_courses($cats) {
 }
 
 const TYPES = array("mod", "block");
-function get_table_headers(bool $nonrecursive = false, bool $humanreadable = false) {
-    $pluginman = core_plugin_manager::instance();
-
-    if ($humanreadable) {
-        $returnarray = array("ID");
-    } else {
-        $returnarray = array("id");
-    }
-
-    if (!$nonrecursive) {
-        array_push($returnarray, "category");
-    } else {
-        array_push($returnarray, "course");
-    }
-
-    foreach (TYPES as $type) {
-        $pluginarray = $pluginman->get_plugins_of_type($type);
-        foreach ($pluginarray as $pluigin) {
-            if ($type == "mod") {
-                $pluginname = $pluigin->name;
-            } else {
-                $pluginname = $type . "_" . $pluigin->name;
-            }
-            if (!$humanreadable) {
-                array_push($returnarray, $pluginname);
-            } else {
-                array_push($returnarray, get_string("pluginname", $pluginname) . " ($type)");
-            }
-        }
-    }
-
+function get_table_headers() {
+    $returnarray = get_all_plugin_names(TYPES);
+    array_unshift($returnarray, "category");
+    array_unshift($returnarray, "id");
     array_push($returnarray, "Sum");
     array_push($returnarray, "Sum without files and folders");
+    return $returnarray;
+}
 
+function get_shown_table_headers() {
+    $pluginman = core_plugin_manager::instance();
+    $returnarray = array();
+    foreach (TYPES as $type) {
+        // Get all plugins of a given type.
+        $pluginarray = $pluginman->get_plugins_of_type($type);
+        // Plugins will be returned as objects so get the name of each and push it into a new array.
+        foreach ($pluginarray as $plugin) {
+            array_push($returnarray, $plugin->displayname . "\n($type)");
+        }
+    }
+    array_unshift($returnarray, "Category");
+    array_unshift($returnarray, "ID");
+    array_push($returnarray, "Sum");
+    array_push($returnarray, "Sum without files and folders");
     return $returnarray;
 }
 

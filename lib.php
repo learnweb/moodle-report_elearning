@@ -34,7 +34,6 @@ defined('MOODLE_INTERNAL') || die;
  */
 
 function report_elearning_extend_settings_navigation(settings_navigation $navigation, context $context) {
-    global $CFG, $OUTPUT;
     if (has_capability('report/elearning:view', $context)) {
         $url = new moodle_url('/report/elearning/index.php');
         $navigation->add(get_string('pluginname', 'report_elearning'), $url, navigation_node::TYPE_SETTING,
