@@ -43,6 +43,6 @@ Go to moodle, login as admin and update the database.
             wsfunction: ['report_elearning_prometheus_endpoint']
             moodlewsrestformat: ['raw']
         static_configs:
-          - targets: ['172.17.0.1']
+          - targets: ['TARGET IP']
     ```      
-9. Add the Token.
+9. Add the Token and the targeted IP.
