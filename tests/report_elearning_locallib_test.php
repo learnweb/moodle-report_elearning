@@ -181,7 +181,11 @@ class report_elearning_locallib_testcase extends advanced_testcase
         }
     }
 
-    // This function is highly dependent on another function. We ONLY test for this functions cause.
+    public function test_get_coursecategorypath () {
+        $this->assertEquals("/$this->categoryid", get_coursecategorypath($this->categoryid));
+    }
+
+    // This function is highly dependent on another function. We ONLY test for this functions logic.
     public function test_get_table_headers() {
         $headers = get_table_headers();
         $this->assertEquals("id", array_shift($headers));

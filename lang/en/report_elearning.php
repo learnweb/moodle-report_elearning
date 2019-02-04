@@ -23,6 +23,7 @@
  */
 
 $string['elearning:view'] = 'View E-Learning';
+$string['elearning:prometheus'] = 'Use the prometheus Endpoint';
 $string['all'] = 'all';
 $string['hiddenandshown'] = 'hidden or shown';
 $string['hiddenandshownplural'] = 'hidden and shown';
