@@ -23,7 +23,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
-
+// I don't see a reason for the RISK_CONFIG, but it was here when I took over.
 $capabilities = array(
     'report/elearning:view' => array(
         'riskbitmask' => RISK_CONFIG,
@@ -31,7 +31,16 @@ $capabilities = array(
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => array(
             'manager' => CAP_ALLOW
-        ),
-        ));
+        )
+    ),
+
+    'report/elearning:prometheus' => array(
+        'riskbitmask' => RISK_XSS | RISK_CONFIG,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archtypes' => array(
+        )
+    )
+);
 
 
