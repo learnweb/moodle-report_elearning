@@ -23,305 +23,226 @@
  */
 defined('MOODLE_INTERNAL') || die;
 
-require_once($CFG->libdir . '/formslib.php');
-
 /**
- * Settings form for the elearning report.
- *
- * @copyright  2015 BFH-TI, Luca Bösch
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- *
- * works for now
+ * This function returns an array with all plugin names of a given plugin type currently installed
+ * @param $types array plugin types
+ * @return array of plugin names
  */
-class report_elearning_form extends moodleform {
-
-    /**
-     * Define the form.
-     */
-    protected function definition() {
-        global $DB;
-        $mform = $this->_form;
-        $all = array();
-
-        // All needs to be on very first place.
-        $allcount = '';
-        $visiblecount = get_coursecategorycoursecount(get_coursecategorypath(0), true);
-        $invisiblecount = get_coursecategorycoursecount(get_coursecategorypath(0), false);
-
-        $allcount .= " (" . $visiblecount . " " . get_string('shownplural', 'report_elearning') . ", " . $invisiblecount .
-                    " " . get_string('hiddenplural', 'report_elearning') . ", " . get_string('total', 'report_elearning') .
-                    " " . ($invisiblecount + $visiblecount) . ")";
-        $all[0] = get_string('all', 'report_elearning') . $allcount;
-
-        $coursecat = $DB->get_records("course_categories", array(), "sortorder ASC", "id,name,path");
-        foreach ($coursecat as $id => $cat) {
-            $components = preg_split('/\//', $cat->path);
-            array_shift($components);
-            $fullname = '';
-            foreach ($components as $component) {
-                $fullname .= ' / ' . format_string($coursecat[$component]->name);
-            }
-            $visiblecount = get_coursecategorycoursecount(get_coursecategorypath($cat->id), true);
-            $invisiblecount = get_coursecategorycoursecount(get_coursecategorypath($cat->id), false);
-
-            $fullname .= " (" . $visiblecount . " " . get_string('shownplural', 'report_elearning') . ", " . $invisiblecount .
-                    " " . get_string('hiddenplural', 'report_elearning') . ", " . get_string('total', 'report_elearning') .
-                    " " . ($invisiblecount + $visiblecount) . ")";
-            $all[$id] = substr($fullname, 3);
-        }
-
-        if (count($all) == 2) {
-            // I.e., the case for (all) plus only 1 entry, making (all) redundant ...
-            unset($all[0]);
-        }
-
-        $mform->addElement('select', 'elearningcategory', get_string('category', 'report_elearning'), $all);
-
-        $mform->addElement('checkbox', 'elearningvisibility', get_string('onlyshown', 'report_elearning'),
-                $mform->getSubmitValue('elearningvisibility'));
-        $mform->addElement('checkbox', 'nonews', get_string('nonewsforum', 'report_elearning'),
-                $mform->getSubmitValue('nonews'));
-
-        $mform->addElement('submit', 'submitbutton', get_string('choose', 'report_elearning'));
-    }
-
-}
-
-/**
- * This function limits the length of a string, cutting in the middle
- *
- * @see http://www.php.net/manual/en/function.substr.php#84775
- *
- * @param string $value Input string
- * @param int $length Admissible length of string
- * @return string String with reduced length
- */
-function limitstringlength($value, $length = MAX_STRING_LEN) {
-    if (strlen($value) >= $length) {
-        $lengthmax = ($length / 2) - 3;
-        $start = strlen($value) - $lengthmax;
-        $limited = substr($value, 0, $lengthmax);
-        $limited .= " ... ";
-        $limited .= substr($value, $start, $lengthmax);
-    } else {
-        $limited = $value;
-    }
-    // Take care to badly-escaped strings ...
-    return htmlentities($limited, ENT_QUOTES, 'UTF-8');
-}
-
-/**
- * Returns the amount of courses in a certain category and its subcategories.
- *
- * @param string $path The category path (e.g. /5/6).
- * @param boolean $onlyvisible Whether only visible courses should count.
- * @uses array $DB: database object
- * @return int $sql The report table creation SQL.
- * @throws dml_exception
- */
-function get_coursecategorycoursecount($path, $onlyvisible=false) {
-    global $DB;
-    $sql = "  SELECT c.id, cc.path
-                FROM {course} c
-                JOIN {course_categories} cc
-                  ON cc.id = c.category
-               WHERE (cc.path LIKE CONCAT( '$path/%' )
-                  OR cc.path LIKE CONCAT( '$path' ))";
-    // Omit hidden courses and categories.
-    if ($onlyvisible == true) {
-        $sql .= "AND ((c.visible != 0) AND (cc.visible != 0))";
-    } else {
-        $sql .= "AND ((c.visible = 0) OR (cc.visible = 0))";
-    }
-    return(count($DB->get_records_sql($sql)));
-}
-
-function get_all_plugin_names(){
+function get_all_plugin_names(array $types) {
     $pluginman = core_plugin_manager::instance();
-    $pluginarray = $pluginman -> get_plugins_of_type("mod");
-
     $returnarray = array();
-    foreach($pluginarray as $pluigin) {
-        array_push($returnarray, $pluigin->name);
+    foreach ($types as $type) {
+        // Get all plugins of a given type.
+        $pluginarray = $pluginman->get_plugins_of_type($type);
+        // Plugins will be returned as objects so get the name of each and push it into a new array.
+        foreach ($pluginarray as $plugin) {
+            array_push($returnarray, $plugin->name);
+        }
     }
-
-
     return $returnarray;
 }
 
 /**
- * Returns the sql to create a e-learning report table.
- * supposed to list plugins in a dynamic way instead of static listing
- *
- * @param int $category The category id.
- * @param boolean $onlyvisible Whether only visible courses should count.
- * @param boolean $nonews Whether news should be excluded from count. applys to forum NYI
- * @uses array $DB: database object
- * @return string $sql The report table creation SQL.
+ * @return array of mappings from a contectid to their course id
+ * @throws dml_exception
+ */
+// I honestly dislike this function since it takes up alot of memory.
+// Moodle has a function to convert a course id to a context id, but I havent found one for the other way around yet.
+// Since this caches all course contexts there is a lot of memory lost.
+
+function context_id_to_course_id_table() {
+    global $DB;
+    // Get ALL course ids.
+    $courseid = $DB->get_records_sql("SELECT id FROM {course} GROUP BY id");
+    $table = array();
+    foreach ($courseid as $id) {
+        // Now get the contextid of this courseid and map it to the courseid.
+        $table[context_course::instance($id->id)->id] = $id->id;
+    }
+    return $table;
+}
+
+/**
+ * @return array category mapped to an array that lists the usage of all "blocks" in that course
+ * @throws dml_exception
  */
 
-function get_tablesql($category, $onlyvisible=false, $nonews=false) {
-    $pluginarray = get_all_plugin_names();
-    if($category === 0){
-        $sql = "SELECT DISTINCT '' AS mccid, '' AS CATEGORY, '' AS mccpath,";
-    }else{
-        $categorypath = get_coursecategorypath($category);
-        $sql = "SELECT mcc.id AS mccid, mcc.name AS Category, mcc.path AS mccpath,";
-    }
-
-    //so, let's put those bad boys into a proper statement shall we?
-    foreach($pluginarray as $plugin){
-        if(strpos($plugin, " ")!==false){
+function get_block_data() {
+    global $DB;
+    // In moodle the first parameter needs to be unique.
+    // Since all block instances are in one database we can do 1 of 3 things:
+    // 1 we query for one block at a time,
+    // 2 we query for one plugin at a time,
+    // 3 we find a unique combination of keys since no key other than "id" is unique in this table.
+    // Since we have 2 sets, a unique identifier has to be the cartesian product of those sets.
+    // in our case we have the set of courses (parentcontextid) and the set of blocks (blockname).
+    // Therefore we will select the tuple of those as our primary key and group the count by that.
+    $data = $DB->get_records_sql("SELECT concat(parentcontextid,',', blockname) AS tupel, count(blockname) AS count
+                  FROM {block_instances} GROUP BY tupel");
+    // The data we receive is already sufficent, however it is really badly structured.
+    // Therefore we want to refine our data to be made out of arrays (arrays outperform stdClasses 3 times in terms of speed)!
+    $refineddata = array();
+    // Since we only got the coursecontext but need the courseid we'll fetch the table matching those.
+    // Das is übrigens ne bijektion.
+    $tablecontent = context_id_to_course_id_table();
+    // In the end we want to have the data of each CATEGORY not COURSE. So far we only got data per course.
+    // So we'll fetch the table matching each course to their category.
+    // Das ist leider keine bijektion. Übrigens auch keine in- oder surjektion.
+    $map = get_child_map();
+    foreach ($data as $record) {
+        // The tuples come as contextid,blockname so we extract contextid and blockname.
+        $record->tupel = explode(",", $record->tupel);
+        $contextid = $record->tupel[0];
+        $blockname = $record->tupel[1];
+        // There are blocks that exist outside of a course. In example the Dashboard has alot of blocks that
+        // ... don't belong to any course. We don't want these non-course blocks.
+        // So we check if the contextid is in the table of contextids that refer to a courseid.
+        if (array_key_exists((integer)$contextid, $tablecontent)) {
+            // If it is indeed a course-context we'll get that courseid and from there retrive the categoryid.
+            $categoryid = $map[$tablecontent[(integer)$contextid]];
+        } else {
+            // Doesn't belong to a course. Therefore it's dismissed.
             continue;
         }
-        $sql .= "(
-                    SELECT COUNT(*)
-                    FROM {{$plugin}} p
-                    JOIN {course} c
-                    ON c.id = p.course
-                    JOIN {course_categories} cc
-                    ON cc.id = c.category";
-
-        //if a category has been given we need to filter for it
-        if($category !== 0){
-            $sql .= " WHERE (cc.path LIKE CONCAT( '$categorypath/%' )
-                                OR cc.path LIKE CONCAT( '$categorypath' ))";
+        // If there hasn't been another course with this block yet, we'll need to initialize the array.
+        if (!isset($refineddata[$blockname])) {
+            $refineddata[$blockname] = array();
         }
-
-        // if we chose to only list visible courses, we don*t wan't invisible ones
-        if($onlyvisible){
-            $sql .= "   AND ((c.visible != 0) AND (cc.visible != 0))";
+        // If there hasn't been another course of that category with this block yet, we'll need to initially set the value.
+        // However if there already was we don't want to overwrite the count but rather increase it.
+        if (!isset($refineddata[$blockname][$categoryid])) {
+            $refineddata[$blockname][$categoryid] = $record->count;
+        } else {
+            $refineddata[$blockname][$categoryid] += $record->count;
         }
-
-        // but we still need to select them by a name so...
-        $pluginselas = strtoupper($plugin);
-        $sql .= "   ) AS {$pluginselas},";
     }
-    // kill that trailing comma
-    $sql = mb_substr($sql, 0, -1);
 
-    // now let's add the FROM clauses
-
-    if($category === 0){
-        $sql .= "FROM {course_categories} mcc";
-    }else{
-        $sql .= " FROM {course_categories} mcc
-                 WHERE mcc.id = " . $category .
-                 " ORDER BY mcc.sortorder;";
-    }
-    return $sql;
+    return $refineddata;
 }
 
-
 /**
- * Returns the array of an e-learning report table course row.
- *
- * @param int $courseid The course id.
- * @param boolean $onlyvisible Whether only visible courses should count.
- * @param boolean $nonews Whether news should be excluded from count.
- * @uses array $CFG: system configuration
- * @uses array $DB: database object
- * @return array $returnarray The report table array.
+ * @return array category mapped to an array that lists the usage of all "mods" in that course
  * @throws dml_exception
  */
-function get_coursetablecontent($courseid, $onlyvisible=false, $nonews=false){
-    global $CFG, $DB;
-    $sql = "SELECT mc.id, mc.fullname,";
-    $pluginarray = get_all_plugin_names();
-    foreach ($pluginarray as $plugin){
-        $sql .= "(
-                      SELECT COUNT( * )
-                        FROM {{$plugin}} r
-                        JOIN {course} c
-                          ON c.id = r.course
-                        JOIN {course_categories} cc
-                          ON cc.id = c.category
-                       WHERE c.id = mc.id";
 
-        if ($onlyvisible == true) {
-            $sql .= "        AND ((c.visible != 0) AND (cc.visible != 0))";
-        }
-        if ($nonews == true and $plugin == "forum") {
-            $sql .= "       AND f.type != 'news'";
-        }
-        $sql .= "     ) AS $plugin,";
+// Alot of the functionality is the same as "get_block_data"
+// ...sometimes it's worth taking a look over there, if something is unclear.
+
+function get_plugin_data() {
+    global $DB;
+    // In the end we want to have the data of each CATEGORY not COURSE. So far we only got data per course.
+    // So we'll fetch the table matching each course to their category.
+    $map = get_child_map();
+    // Unlike blocks that are all in one database, every plugin from the "mod" directory maintains its own table.
+    // Those tables are named sqlprefix pluginname, so we'll need all the pluginnames to find them.
+    $plugins = get_all_plugin_names(array("mod"));
+    foreach ($plugins as $plugin) {
+        // Some plugins are weird and create content for course 0.
+        // There is no course 0. Therefore we'll use a WHERE clause.
+        $data[$plugin] = $DB->get_records_sql("SELECT course, count(course) AS count FROM {{$plugin}} WHERE course <> 0 GROUP BY course ");
     }
-    // kill that trailing comma
-    $sql = mb_substr($sql, 0, -1);
-
-    $sql .= " FROM {course} mc
-              WHERE mc.id = ?
-              ORDER BY mc.sortorder";
-
-    //ok THIS is weird why is the table content handled in locallib but for the other table it's handled in index??
-    //TODO fix that mess
-    $returnobject = $DB->get_records_sql($sql, array($courseid));
-    $returnarray = array("<a href=\"$CFG->wwwroot/course/view.php?id=" . $returnobject[$courseid]->id . "\" target=\"_blank\">"
-        . $returnobject[$courseid]->id . "</a>",
-        "<a href=\"$CFG->wwwroot/course/view.php?id="
-        . $returnobject[$courseid]->id . "\" target=\"_blank\">" . $returnobject[$courseid]->fullname . "</a>");
-    $total = 0;
-    $totalnfnd = 0;
-    foreach($pluginarray as $plugin){
-        if($plugin != "resource" and $plugin != "folder"){
-            $totalnfnd += $returnobject[$courseid] -> $plugin;
+    // Again we already fetched sufficient data, but again wanna refine it.
+    $refineddata = array();
+    foreach ($data as $plugin => $plugindata) {
+        // Fetch all datasets for a plugin.
+        foreach ($plugindata as $coursedata) {
+            // Now operate on one set of data at a time.
+            // First we want to retrieve the categoryid of the provided course.
+            $catid = $map[$coursedata->course];
+            // If this is the first time we're operating on this plugin we need to initialize an array for its data.
+            if (!isset($refineddata[$plugin])) {
+                $refineddata[$plugin] = array();
+            }
+            // If there hasn't been a course of this category with this plugin yet, we'll want to set the initial value.
+            // If there has however we don't want to overwrite the previous value but rather add to it.
+            if (!isset($refineddata[$plugin][$catid])) {
+                // Cast to (int) for uniformity. $coursedata->count is a String.
+                $refineddata[$plugin][$catid] = (int)$coursedata->count;
+            } else {
+                $refineddata[$plugin][$catid] += $coursedata->count;
+            }
         }
-        $total += $returnobject[$courseid] -> $plugin;
-        array_push($returnarray, $returnobject[$courseid] -> $plugin);
     }
-    array_push($returnarray, $total, $totalnfnd);
-    return $returnarray;
+    $data = null;
+    return $refineddata;
+}
+
+
+/**
+ * @param $elearningvisibility bool wether to count invisible mods or not
+ * @param $nonews bool shall news forum be counted?
+ * @param $a stdClass std class that mainly provides the category id in case of a selection
+ * @return array An array, that maches each categoryid to an array.
+ * This array holds pluginnames as key and matches them to their use by the category.
+ * @throws coding_exception
+ * @throws dml_exception
+ */
+function get_data () {
+    // I mean this used to be REALLY long.
+    $plugindata = get_plugin_data();
+    $blockdata = get_block_data();
+    return array_merge($plugindata, $blockdata);
 }
 
 /**
- * Returns a formulated (fullname / fullname) category / sub-category path.
- *
- * @param string $intpath A path with the ids and slashes (e.g. /2/8/10).
- * @return string $stringpath A formulated path.
+ * @return array Maps each courseid to its categoryid
+ * @throws dml_exception
  */
-function get_stringpath($intpath) {
+function get_child_map() {
     global $DB;
-    $components = preg_split('/\//', $intpath);
-    array_shift($components);
-    $fullname = '';
-    foreach ($components as $component) {
-        $fullname .= ' / ' . format_string($DB->get_field('course_categories', 'name', array('id' => $component)));
+    $map = array();
+    // Get ALL courses.
+    $courses = $DB->get_records_sql("SELECT id, category FROM {course}");
+    foreach ($courses as $course) {
+        // Map the courseid to the categoryid.
+        $map[(int) $course->id] = $course->category;
     }
-    return substr($fullname, 3);
+    return $map;
 }
 
-/**
- * Return a instance id (course category) when you know the context.
- * @param int $id A context id.
- * @return int The according context id.
- */
-function get_instancecontext($id) {
+function get_array_for_categories (int $maxdepth) {
     global $DB;
-    if ($id == 0) {
-        return 0;
-    } else {
-        $instances = ($DB->get_records_sql("SELECT id"
-                . "                           FROM {context}"
-                . "                          WHERE instanceid = " . $id
-                . "                            AND contextlevel = 40"));
-        foreach ($instances as $instance) {
-            $returnvalue = $instance->id;
+    // Get all those categorys.
+    $categorys = $DB->get_records_sql("SELECT id, name, path, depth FROM {course_categories};");
+
+    // Currently this branch isn't used since the maxdepth is -1.
+    // This branch will delete all categorys whos dept is above maxdepth
+    // It will then find the first category above the original category that is at the correct depth.
+    // Useage of this branch is discouraged if you decide to do so anyway, you'll need to add the logic
+    // ... for counting the values of the subcategories since that is currently NOT supported by endpoint or index.
+    if ($maxdepth > 0) {
+        foreach ($categorys as $category) {
+            $category->subcats = "";
+            if ($category->depth > $maxdepth) {
+                // Add the subcat to the parentcat.
+                $parentpos = explode("/", $category->path);
+                $parent = $parentpos[$maxdepth];
+
+                $categorys[$parent]->subcats .= $category->id . ";";
+                unset($categorys[$category->id]);
+            }
         }
-        return $returnvalue;
     }
+
+    foreach ($categorys as $category) {
+        // We want to add a path that consists of the categorys names instead of of their ids.
+        // So first we'll split them up so we have all the ids.
+        $path = explode("/", $category->path);
+        // The path is preceeded by a / so $path[] is currently "" we don't want nor need that so kill it.
+        array_shift($path);
+        // Initialize.
+        $category->readablepath = "";
+        foreach ($path as $instance) {
+            // For each categoryid we'll now fetch that categorys name and append it to the "readablepath" that way
+            // ...we have the decoded path in the end.
+            $category->readablepath .= "/" . $categorys[$instance]->name;
+        }
+        // We'll never need the depth again so goodbye.
+        unset($category->depth);
+        // Now just rematch the category to the $categorys array. I really wonder wether a pointer would've been better.
+        $categorys[$category->id] = $category;
+    }
+    return $categorys;
 }
 
-/**
- * Return a course category path with a given course category id.
- * @param int $id A course category id.
- * @return string The according course category path.
- */
-function get_coursecategorypath($id) {
-    global $DB;
-    if ($id == 0) {
-        return "";
-    } else {
-        $categorypath = $DB->get_field('course_categories', 'path', array('id' => $id));
-        return $categorypath;
-    }
-}
+

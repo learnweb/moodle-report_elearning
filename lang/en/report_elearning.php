@@ -23,6 +23,7 @@
  */
 
 $string['elearning:view'] = 'View E-Learning';
+$string['elearning:prometheus'] = 'Use the prometheus Endpoint';
 $string['all'] = 'all';
 $string['hiddenandshown'] = 'hidden or shown';
 $string['hiddenandshownplural'] = 'hidden and shown';
@@ -39,8 +40,8 @@ $string['action'] = 'Action';
 $string['courses'] = 'Course(s)';
 $string['choose'] = 'Choose';
 $string['category'] = 'Category';
-$string['courseincategorycount'] = 'There is {$a->count} {$a->visibility} course in this category (and its subcategories).';
-$string['courseincategorycountplural'] = 'There are {$a->count} {$a->visibility} courses in this category (and its subcategories).';
+$string['courseincategorycount'] = 'There is {$a->count} course in this category (and its subcategories).';
+$string['courseincategorycountplural'] = 'There are {$a->count} courses in this category (and its subcategories).';
 $string['nocourseincategory'] = 'There are no courses in this category (and its subcategories).';
 $string['courseselector'] = "Course <a href='index.php?cn=fn'>full name</a> | <a href='index.php?cn=sn'>short name</a> | <a href='index.php?cn=id'>course id</a>";
 $string['recap'] = '<p>Starting with category {$a->category}, (context {$a->context}).</p>';
@@ -60,7 +61,7 @@ $string['quiz'] = "Quiz";
 $string['scheduler'] = "Scheduler";
 $string['categorytotal'] = "Total of this category and all its sub-categories";
 $string['justcategory'] = "Directly in this category";
-$string['total'] = "Total";
+$string['total'] = "Courses:";
 $string['survey'] = "Survey";
 $string['database'] = "Database";
 $string['glossary'] = "Glossary";
