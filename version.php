@@ -27,5 +27,5 @@ defined('MOODLE_INTERNAL') || die;
 $plugin->version = 2018081400;   // YYYYMMDDHH (year, month, day, 24-hr time)
 $plugin->requires = 2014051200;   // YYYYMMDDHH (This is the release version for Moodle 2.7)
 $plugin->component = 'report_elearning'; // Full name of the plugin (used for diagnostics).
-$plugin->release = 'v3.5-r1';
+$plugin->release = 'v3.6-r1';
 $plugin->maturity = MATURITY_STABLE;

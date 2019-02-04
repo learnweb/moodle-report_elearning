@@ -46,8 +46,8 @@ class report_elearning_external extends external_api {
 
         // Capability checking
         // OPTIONAL but in most web service it should present.
-        if (!has_capability('moodle/user:viewdetails', $context)) {
-            throw new moodle_exception('cannotviewprofile');
+        if (!has_capability('report/elearning:prometheus', $context)) {
+            throw new moodle_exception('not permitted prometheus capability not set');
         }
         // Get data from locallib of the elearning project.
         $b = get_data();
