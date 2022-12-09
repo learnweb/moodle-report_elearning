@@ -35,15 +35,16 @@ require_once($CFG->dirroot . '/report/elearning/form.php');
 require_once($CFG->dirroot . '/report/elearning/locallib.php');
 require_once($CFG->dirroot . '/course/lib.php');
 
-global $CFG, $PAGE, $OUTPUT;
+global $CFG, $PAGE, $OUTPUT, $USER;
 require_login();
 $context = context_system::instance();
+require_capability('report/elearning:view', $context, $USER);
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/report/elearning/index.php'));
 $output = $PAGE->get_renderer('report_elearning');
 
 $mform = new _form(new moodle_url('/report/elearning/'));
-// Extract all this data
+// Extract all this data.
 
 if (($mform->is_submitted() && $mform->is_validated()) || (isset($_POST['download']))) {
     // Processing of the submitted form.

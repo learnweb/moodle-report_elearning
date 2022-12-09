@@ -26,14 +26,16 @@ Go to moodle, login as admin and update the database.
 
 1. Log into moodle and navigate to Site administration -> Plugin -> Web services
 2. Enable web services
-3. Create a new user for the web service with the sufficient permissions. Or use an existing one with enough permissions.
-4. Create a new token for this user for the `elearning_prometheus` Service.
-5. Go to the bottom of the Web services page and copy the created Token.
-6. For this to work you'll need to have a webservice protocol that puts out raw data. There is currently no such protocol available by default. You can skip the following substeps, if you already have such a protocol.
+3. Create a new user for the web service.
+4. For this to work you'll need to have a webservice protocol that puts out raw data. There is currently no such protocol available by default. You can skip the following substeps, if you already have such a protocol.
     1. Clone the raw protocol. Go to your moodle repository and enter `git clone https://github.com/rtschu/moodle-raw-protocol.git webservice/raw`
     2. Go back to the Web service panel and enable the RAW protocol under Manage protocols.
-7. Install prometheus
-8. Add this to your prometheus.yml scrape_configs
+5. Create a new Role for the new user you created. Make sure it has the `report/elearning:prometheus` and the `webservice/raw:use` capabilities.
+6. Assign your new Role to your new user.
+7. Create a new token for this user for the `elearning_prometheus` Service.
+8. Go to the bottom of the Web services page and copy the created Token.
+9. Install prometheus
+10. Add this to your prometheus.yml scrape_configs
     ```yml 
         - job_name: 'moodle'
         scrape_interval: 5s
@@ -43,6 +45,6 @@ Go to moodle, login as admin and update the database.
             wsfunction: ['report_elearning_prometheus_endpoint']
             moodlewsrestformat: ['raw']
         static_configs:
-          - targets: ['172.17.0.1']
+          - targets: ['TARGET IP']
     ```      
-9. Add the Token.
+11. Add the Token and the targeted IP.
